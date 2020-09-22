@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetDataBuslineMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetDataBusline">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="company" jdbcType="VARCHAR" property="company" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="length" jdbcType="REAL" property="length" />
+  </resultMap>
+  
+  <!-- 获取机构 -->
+	<select id="getCompanyList" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.entity.NetDataBusline">
+		SELECT DISTINCT
+			ndb.company
+		FROM net_data_busline ndb 
+		<where>
+				AND ndb.company is not null
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 </where>
+	</select>
+  
+  <!-- 获取机构线路 -->
+	<select id="getLineList" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.entity.NetDataBusline">
+		SELECT DISTINCT
+			ndb.line_uuid lineUuid,
+			ndb.line_number lineNumber
+		FROM net_data_busline ndb 
+		<where>
+				<!-- and ndb.company is not null -->
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+	</select>
+  
+	<!-- 获取机构线路条数 -->
+	<select id="getCompanyLineCounts" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBuslineValue">
+		SELECT
+			ndb.company,
+			COUNT (ndb.line_uuid) lineCounts
+		FROM
+			(
+				SELECT DISTINCT
+					line_uuid,
+					company,
+					line_number
+				FROM
+					net_data_busline
+			) ndb
+		<where>
+				AND company is not null
+		 	<if test="company != null and company != ''">
+		 		AND company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		GROUP BY company
+		ORDER BY company
+	</select>
+	
+	<!-- 获取机构线路总长度 -->
+	<select id="getCompanyLineLengths" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBuslineValue">
+		<!-- SELECT company,sum(length)/2 lineLengths FROM net_data_busline 
+		<where>
+		 		AND company is not null
+		 	<if test="company != null and company != ''">
+		 		AND company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND line_uuid = #{lineID}
+		 	</if>
+		</where>
+		GROUP BY company
+		ORDER BY company -->
+		
+		WITH TT AS (
+			SELECT
+				company,line_uuid,arrow,
+				SUM (LENGTH) Linelength
+			FROM
+				net_data_busline
+			<where>
+				arrow = '1' AND company is not null
+			 	<if test="company != null and company != ''">
+			 		AND company = #{company}
+			 	</if>
+			 	<if test="lineID != null and lineID != ''">
+			 		AND line_uuid = #{lineID}
+			 	</if>
+			</where>
+			GROUP BY
+				company,line_uuid,arrow
+		),
+		 TT1 AS (
+			SELECT
+				company,line_uuid,arrow,
+				SUM (LENGTH) Linelength
+			FROM
+				net_data_busline
+			<where>
+				arrow = '2' AND company is not null
+			 	<if test="company != null and company != ''">
+			 		AND company = #{company}
+			 	</if>
+			 	<if test="lineID != null and lineID != ''">
+			 		AND line_uuid = #{lineID}
+			 	</if>
+			</where>
+			GROUP BY
+				company,line_uuid,arrow
+		),
+		TT2 AS (
+		SELECT
+				company,line_uuid,count(line_uuid) countLine
+			FROM
+				net_data_busline
+			<where>
+				AND company is not null
+			 	<if test="company != null and company != ''">
+			 		AND company = #{company}
+			 	</if>
+			 	<if test="lineID != null and lineID != ''">
+			 		AND line_uuid = #{lineID}
+			 	</if>
+			</where>
+			GROUP BY
+				company,line_uuid
+		),
+		TT3 AS (
+		SELECT
+			TT.company,((COALESCE(TT.Linelength, 0) + COALESCE(TT1.Linelength, 0))/TT2.countLine) countLine
+		FROM
+			TT
+		LEFT JOIN TT1 ON 
+			TT.company = TT1.company AND TT.line_uuid = TT1.line_uuid
+		LEFT JOIN TT2 ON 
+			TT.company = TT2.company AND TT.line_uuid = TT2.line_uuid
+		)
+		SELECT TT3.company,SUM(countLine) lineLengths FROM TT3 GROUP BY TT3.company ORDER BY company
+	</select>
+	
+	<!-- 获取(公交五公司)线路上行长度 -->
+	<select id="getCompanyLineOnLengths" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBuslineValue">
+		SELECT line_uuid lineUuid,line_number lineName,sum(length) lineLengths FROM net_data_busline
+		<where>
+			arrow = '1' 
+			<!-- AND company is not null -->
+		 	<if test="company != null and company != ''">
+		 		AND company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		GROUP BY line_uuid,line_number
+		ORDER BY line_number
+	</select>
+	
+	<!-- 线路情况列表 -->
+	<select id="getCompanyLineLists" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBuslineValue">
+		SELECT
+			t3.company,
+			t3.line_name lineName,
+			t1.station_index stationIndex,
+			t1.station_name stationName,
+			t1.predistance
+		FROM
+			net_data_busstation t1
+		LEFT JOIN net_data_basestation t2 ON t1.station_id = t2.station_id
+		LEFT JOIN net_data_busline t3 ON t1.pid = t3.uuid
+		<where>
+				<!-- AND t3.company is not null -->
+		 	<if test="company != null and company != ''">
+		 		AND t3.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND t3.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="lineName != null and lineName != ''">
+		 		AND t3.line_number = #{lineName}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND t3.arrow = #{arrow}
+		 	</if>
+		 </where>
+	</select>
+	
+	<!-- 获取(公交五公司)线路下行长度 -->
+	<select id="getCompanyLineDownLengths" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBuslineValue">
+		SELECT line_uuid lineUuid,line_number lineName,sum(length) lineLengths FROM net_data_busline
+		<where>
+			 arrow = '2'
+		 	<if test="company != null and company != ''">
+		 		AND company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		GROUP BY line_uuid,line_number
+		ORDER BY line_number
+	</select>
+	
+</mapper>

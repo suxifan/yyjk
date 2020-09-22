@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BusSysOrgMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BusSysOrg">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="org_type" jdbcType="INTEGER" property="orgType" />
+    <result column="org_parent_uuid" jdbcType="VARCHAR" property="orgParentUuid" />
+    <result column="org_enabled" jdbcType="CHAR" property="orgEnabled" />
+    <result column="org_sort_index" jdbcType="INTEGER" property="orgSortIndex" />
+    <result column="org_create_time" jdbcType="TIMESTAMP" property="orgCreateTime" />
+    <result column="org_short_name" jdbcType="VARCHAR" property="orgShortName" />
+    <result column="org_drop_flag" jdbcType="CHAR" property="orgDropFlag" />
+  </resultMap>
+  
+  <select id="selectTBusSysOrgList" parameterType="com.cictec.yyjk.base.model.entity.BusSysOrg" resultMap="BaseResultMap">
+   	select t.* from dw_dim_bus_sys_org t 
+   <where>
+   		<if test="orgUuid != null and orgUuid != ''"><![CDATA[ AND t.org_uuid = #{orgUuid} OR t.org_uuid = '1']]></if>
+   		<if test="orgName != null"><![CDATA[ AND t.org_name = #{orgName} ]]></if>
+   		<if test="orgType != null"><![CDATA[ AND t.org_type = #{orgType} ]]></if>
+   		<if test="orgParentUuid != null"><![CDATA[ AND t.org_parent_uuid = #{orgParentUuid} ]]></if>
+   		<if test="orgEnabled != null"><![CDATA[ AND t.org_enabled = #{orgEnabled} ]]></if>
+   		<if test="orgSortIndex != null"><![CDATA[ AND t.org_sort_index = #{orgSortIndex} ]]></if>
+   		<if test="orgCreateTime != null"><![CDATA[ AND t.org_create_time = #{orgCreateTime} ]]></if>
+   		<if test="orgShortName != null"><![CDATA[ AND t.org_short_name = #{orgShortName} ]]></if>
+   		<if test="orgDropFlag != null"><![CDATA[ AND t.org_drop_flag = #{orgDropFlag} ]]></if>
+   </where>
+  </select>
+</mapper>

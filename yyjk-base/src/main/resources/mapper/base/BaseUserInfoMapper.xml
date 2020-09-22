@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseUserInfoMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseUserInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="user_id" jdbcType="VARCHAR" property="userId" />
+    <result column="user_account" jdbcType="VARCHAR" property="userAccount" />
+    <result column="user_password" jdbcType="VARCHAR" property="userPassword" />
+    <result column="user_gender" jdbcType="VARCHAR" property="userGender" />
+    <result column="user_real_name" jdbcType="VARCHAR" property="userRealName" />
+    <result column="user_telephone" jdbcType="VARCHAR" property="userTelephone" />
+    <result column="user_mobile" jdbcType="VARCHAR" property="userMobile" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="enabled" jdbcType="VARCHAR" property="enabled" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+    <result column="userOrgUuid" jdbcType="VARCHAR" property="user_org_uuid" />   
+    <result column="role_name" jdbcType="VARCHAR" property="roleName" />   
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />  
+  </resultMap>
+  
+  <resultMap id="BaseResulRoletMap" type="com.cictec.yyjk.base.model.entity.BaseRoleInfo">
+    <id column="role_id" jdbcType="VARCHAR" property="roleId" />
+    <result column="role_name" jdbcType="VARCHAR" property="roleName" />
+    <result column="role_parent_id" jdbcType="VARCHAR" property="roleParentId" />
+    <result column="role_sort" jdbcType="SMALLINT" property="roleSort" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="enabled" jdbcType="VARCHAR" property="enabled" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+    <result column="recheck_type" jdbcType="VARCHAR" property="recheckType" />
+  </resultMap>
+  
+  <resultMap id="BaseResultResourceMap" type="com.cictec.yyjk.base.model.entity.BaseResourceInfo">
+    <id column="resource_id" jdbcType="VARCHAR" property="resourceId" />
+    <result column="resource_name" jdbcType="VARCHAR" property="resourceName" />
+    <result column="resource_parent_id" jdbcType="VARCHAR" property="resourceParentId" />
+    <result column="resource_type" jdbcType="VARCHAR" property="resourceType" />
+    <result column="resource_title" jdbcType="VARCHAR" property="resourceTitle" />
+    <result column="resource_url" jdbcType="VARCHAR" property="resourceUrl" />
+    <result column="resource_sort" jdbcType="SMALLINT" property="resourceSort" />
+    <result column="resource_image" jdbcType="VARCHAR" property="resourceImage" />
+    <result column="resource_component" jdbcType="VARCHAR" property="resourceComponent" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="enabled" jdbcType="VARCHAR" property="enabled" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+  </resultMap> 
+  
+  <select id="getUserInfoByVo" parameterType="com.cictec.yyjk.base.model.vo.BaseUserInfoVo" resultMap="BaseResultMap">
+		SELECT t1.*,t2.org_name 
+		FROM base_user_info t1 LEFT JOIN dw_dim_bus_sys_org t2 ON t1.user_org_uuid = t2.org_uuid
+		<where>
+			<if test="userName != null and userName != ''">
+				AND t1.user_name like  '%' || #{userName} || '%'
+			</if>
+			<if test="gender != null and gender != ''">
+				AND t1.gender= #{gender}
+			</if>
+			<if test="userAccount != null and userAccount != ''">
+				AND t1.user_account= #{userAccount}
+			</if>
+			<if test="enabled != null and enabled != ''">
+				AND t1.enabled= #{enabled}
+			</if>
+			<if test="tokenUserAccount != null and tokenUserAccount != ''">
+				AND t1.create_user = #{tokenUserAccount}
+			</if>
+		</where>
+		ORDER BY t1.update_time DESC
+		<if test="pageNumber != null and pageNumber != ''">
+			LIMIT #{pageSize} OFFSET (#{pageNumber}-1) * #{pageSize}
+		</if>
+  </select>
+
+  <select id="getUsersByOrgId"  resultMap="BaseResultMap">
+	SELECT * FROM base_user_info
+	<where>
+		<if test="orgId != null and orgId != ''">
+			AND user_org_uuid  = #{orgId}
+		</if>
+	</where>		
+  </select>  
+  
+  <select id="getUserCount" parameterType="com.cictec.yyjk.base.model.vo.BaseUserInfoVo" resultType="java.lang.Integer">
+  		SELECT count(*)
+		FROM base_user_info 
+		<where>
+			<if test="userName != null and userName != ''">
+				AND user_name like  '%' || #{userName} || '%'
+			</if>
+			<if test="gender != null and gender != ''">
+				AND gender= #{gender}
+			</if>
+			<if test="userAccount != null and userAccount != ''">
+				AND user_account= #{userAccount}
+			</if>
+			<if test="enabled != null and enabled != ''">
+				AND enabled= #{enabled}
+			</if>
+			<if test="tokenUserAccount != null and tokenUserAccount != ''">
+				AND create_user = #{tokenUserAccount}
+			</if>
+		</where>
+  </select>
+  
+  <!-- 根据ids获取用户列表 -->
+  <select id="getUsersByIds" parameterType="java.util.List" resultMap="BaseResultMap">
+	SELECT * FROM base_user_info
+	<where>
+		<if test="userIds != null and userIds.size() > 0">
+			AND user_id in 
+			<foreach collection="userIds" item="userId" open="(" separator="," close=")">
+				#{userId}
+			</foreach>
+		</if>
+		<!-- AND enabled = '1' -->
+	</where>		
+  </select>
+  
+  <!-- 根据用户id获取权限 -->
+  <select id="getPermissionsByUserId" parameterType="java.lang.String" resultMap="BaseResultResourceMap">
+	SELECT DISTINCT t5.*
+	FROM
+		base_user_info t1
+	LEFT JOIN base_user_role t2 ON t1.user_id = t2.user_id
+	LEFT JOIN base_role_info t3 ON t2.role_id = t3.role_id
+	LEFT JOIN base_role_resource t4 ON t3.role_id = t4.role_id
+	LEFT JOIN base_resource_info t5 ON t4.resource_id = t5.resource_id
+	<where>
+		<if test="userId != null and userId != ''">
+			t1.user_id = #{userId}
+		</if>
+		AND T3.enabled = '1'
+		AND t5.enabled = '1'
+		AND t5.resource_id IS NOT NULL
+	</where>
+  </select>
+ 
+  <!-- 根据用户id获取数据权限 -->
+  <select id="getDataPermissionsByUserId" parameterType="java.lang.String" resultType="com.cictec.yyjk.base.model.entity.BaseDataResourceInfo">
+	SELECT DISTINCT t5.data_resource_id AS "dataResourceId" ,t5.data_resource_name AS "dataResourceName",t5.data_resource_parent_id AS "dataResourceParentId",t5.data_resource_type AS "dataResourceType"
+	 ,t5.data_resource_title AS "dataResourceTitle",t5.data_resource_sort AS "dataResourceSort",t5.data_resource_isvalid AS "dataResourceIsvalid",t5.create_time AS "createTime",t5.describes
+	FROM
+		base_user_info t1
+	LEFT JOIN base_user_role t2 ON t1.user_id = t2.user_id
+	LEFT JOIN base_role_info t3 ON t2.role_id = t3.role_id
+	LEFT JOIN base_role_dataresource t4 ON t3.role_id = t4.role_id
+	LEFT JOIN base_data_resource_info t5 ON t4.data_resource_id = t5.data_resource_id
+	<where>
+		<if test="userId != null and userId != ''">
+			t1.user_id = #{userId}
+		</if>
+		AND T3.enabled = '1'
+		AND t5.data_resource_isvalid = '1'
+		AND t5.data_resource_type = '2'
+		AND t5.data_resource_id IS NOT NULL
+	</where>
+  </select>
+
+  <!-- 根据用户id获取线路权限 -->
+  <select id="getLineAuthsByUserId"  parameterType="com.cictec.yyjk.base.model.entity.BaseUserInfo" resultType="com.cictec.yyjk.base.model.entity.BusLine">
+	SELECT DISTINCT t5.line_uuid AS lineUuid ,t5.line_name AS lineName,t5.par_line_uuid AS parLineUuid
+	FROM
+		base_user_info t1
+	LEFT JOIN base_user_role t2 ON t1.user_id = t2.user_id
+	LEFT JOIN base_role_info t3 ON t2.role_id = t3.role_id
+	LEFT JOIN base_role_lineresource t4 ON t3.role_id = t4.role_id
+	LEFT JOIN dw_dim_bus_line t5 ON t5.line_uuid = t4.line_resource_id
+	<where>
+		<if test="userId != null and userId != ''">
+			AND t1.user_id = #{userId}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			AND t5.line_org_uuid = #{orgId}
+		</if>
+		<if test="lineUuids != null and lineUuids.size() >0">
+			AND t5.line_uuid in 
+			<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+				#{lineUuid}
+			</foreach>
+		</if>
+		AND T3.enabled = '1'
+		AND t5.line_isvalid = '1'
+		AND t5.line_drop_flag = '0'
+		AND t5.line_uuid IS NOT NULL
+	</where>
+  </select>
+  
+  <select id="findRolesByUserId" parameterType="java.lang.String" resultMap="BaseResulRoletMap">
+	SELECT * FROM base_role_info WHERE role_id in (
+		SELECT role_id FROM base_user_role 
+		<where>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+		</where>
+	) 
+	AND enabled = '1'
+  </select>
+  
+    <select id="findAllRolesByUserId" parameterType="java.lang.String" resultMap="BaseResulRoletMap">
+	SELECT * FROM base_role_info WHERE role_id in (
+		SELECT role_id FROM base_user_role 
+		<where>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+		</where>
+	)
+  </select>
+  
+  
+  <select id="findAuditStatusByUserId" parameterType="java.lang.String" resultType="java.lang.String">
+	SELECT role_type AS roleType FROM base_role_info WHERE role_id in (
+		SELECT role_id FROM base_user_role 
+		<where>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+		</where>
+	)
+  </select>
+  
+  
+  
+  <select id="getResourcesByRoleIds" parameterType="java.util.List" resultMap="BaseResultResourceMap">
+  WITH tt AS(
+	SELECT t3.* FROM base_role_info t1 
+	LEFT JOIN base_role_resource t2 
+		ON t1.role_id  = t2.role_id  
+	LEFT JOIN base_resource_info t3 
+		ON t2.resource_id  = t3.resource_id  
+	<where>
+		<if test="roleIds != null and roleIds.size() > 0">
+			AND t1.role_id in 
+			<foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+				#{roleId}
+			</foreach>
+		</if>
+		AND t3.enabled = '1'
+	</where>
+	)
+	SELECT tt.* FROM tt WHERE tt.resource_id is not null
+  </select>
+   
+  <delete id="deleteUserRole">
+  		DELETE FROM base_user_role 
+  		<where>
+  			<if test="userId != null and userId != ''">
+  			AND user_id  = #{userId}
+  			</if>
+  			<if test="roleIds != null and roleIds.length > 0">
+  				AND role_id in
+  				<foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+  					#{roleId}
+  				</foreach>
+  			</if>  		
+  		</where>
+  </delete>
+  
+   <select id="findUserByOrgId" parameterType="java.lang.String" resultType="Map">
+		SELECT
+			t1.user_account AS "userName",
+			t2.role_id AS "roleId"
+		FROM
+			base_user_info t1
+		LEFT JOIN base_user_role t2 ON t1.user_id = t2.user_id
+		WHERE
+			t1.user_id IN (
+				SELECT
+					user_id
+				FROM
+					base_user_role
+				WHERE
+					role_id IN (
+						SELECT
+							role_id
+						FROM
+							base_role_info
+						WHERE
+							role_id IN (
+								SELECT
+									role_id
+								FROM
+									base_user_role
+								WHERE
+									user_id IN (
+										SELECT
+											user_id
+										FROM
+											base_user_info
+										WHERE
+											user_org_uuid IN (
+												SELECT
+													user_org_uuid
+												FROM
+													base_user_info
+												<where>
+													<if test="userId != null and userId != ''">
+														 user_id = #{userId}
+													</if>
+												</where>
+											)
+									)
+							)
+						AND role_type = '1'
+						AND enabled = '1'
+					)
+			)
+  </select>
+  
+  
+   <select id="findAllUserByOrgId"  resultType="Map">
+		SELECT
+			t1.user_account AS "userName",
+			t2.role_id AS "roleId"
+		FROM
+			base_user_info t1
+		LEFT JOIN base_user_role t2 ON t1.user_id = t2.user_id
+		WHERE
+			t1.user_id IN (
+				SELECT
+					user_id
+				FROM
+					base_user_role
+				WHERE
+					role_id IN (
+						SELECT
+							role_id
+						FROM
+							base_role_info
+						WHERE
+						 role_type = '1'
+						AND enabled = '1'
+					)
+			)
+  </select>
+
+  <!-- 根据用户ID获取用户的线路权限 -->
+  <select id="getLineListByUserId" parameterType="com.cictec.yyjk.base.model.vo.BaseUserInfoVo" resultType="com.cictec.yyjk.base.model.view.BusLineView">
+    SELECT
+		t3.line_resource_id lineUuid
+	FROM
+		base_user_info t1
+	LEFT JOIN base_user_role t2 ON t1.user_id = t2.user_id
+	LEFT JOIN base_role_lineresource t3 ON t2.role_id = t3.role_id
+	<where>
+		<if test="personId != null and personId != ''">
+		AND t1.user_id  = #{personId}
+		</if> 		
+	</where>
+  </select>
+  
+</mapper>

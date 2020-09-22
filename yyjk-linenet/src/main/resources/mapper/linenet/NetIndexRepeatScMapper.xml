@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexRepeatScMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatSc">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="s_station" jdbcType="VARCHAR" property="sStation" />
+    <result column="e_station" jdbcType="VARCHAR" property="eStation" />
+    <result column="s_station_index" jdbcType="INTEGER" property="sStationIndex" />
+    <result column="e_station_index" jdbcType="INTEGER" property="eStationIndex" />
+    <result column="repeat_line" jdbcType="VARCHAR" property="repeatLine" />
+    <result column="repeat_line_count" jdbcType="INTEGER" property="repeatLineCount" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="linename" jdbcType="VARCHAR" property="linename" />
+  </resultMap>
+  <!-- 获取重复度指标链接列表-->
+	<select id="getCompanyLineRepeatScList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexRepeatScVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexRepeatScValue">
+		SELECT
+			ndb.company,
+			nirc.line_number lineNumber,
+			(CASE WHEN nirc.arrow = '1' THEN '上行' WHEN nirc.arrow = '2' THEN '下行' ELSE '' END) arrow,
+			nirc.linename,
+			nirc.s_station_index sStationIndex,
+			nirc.e_station_index eStationIndex,
+			nirc.s_station sStation,
+			nirc.e_station eStation,
+			nirc.repeat_line repeatLine,
+			nirc.repeat_line_count repeatLineCount
+		FROM
+			net_index_repeat_sc nirc
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = nirc.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nirc.arrow = #{arrow}
+		 	</if>
+		 	<if test="sStation != null and sStation != ''">
+		 		AND nirc.s_station like CONCAT('%',#{sStation},'%') 
+		 	</if>
+		 	<if test="eStation != null and eStation != ''">
+		 		AND nirc.e_station like CONCAT('%',#{eStation},'%')
+		 	</if>
+		 </where>
+		ORDER BY ndb.company
+	</select>
+</mapper>

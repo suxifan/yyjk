@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexPfStationDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexPfStationDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="station_index" jdbcType="INTEGER" property="stationIndex" />
+    <result column="station_name" jdbcType="VARCHAR" property="stationName" />
+    <result column="up_count" jdbcType="INTEGER" property="upCount" />
+    <result column="down_count" jdbcType="INTEGER" property="downCount" />
+    <result column="pass_count" jdbcType="INTEGER" property="passCount" />
+    <result column="p_date" jdbcType="VARCHAR" property="pDate" />
+  </resultMap>
+  
+  <!-- 获取线路站点登降量-->
+	<select id="getPfStationDayList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfBaseValue">
+		SELECT
+			nips.station_index,nips.station_name stationName,SUM(nips.up_count) upCount,SUM(nips.down_count) downCount
+		FROM
+			net_index_pf_station_day nips
+		LEFT JOIN net_data_busline ndb ON (ndb.line_number = nips.line_number AND (CASE nips.arrow WHEN '上行' THEN '1' WHEN '下行' THEN '2' ELSE nips.arrow END) = ndb.arrow)
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nips.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nips.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY nips.station_index,nips.station_name
+		ORDER BY nips.station_index
+	</select>
+</mapper>

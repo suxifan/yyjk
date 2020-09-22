@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetDataConfigMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetDataConfig">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="config_name" jdbcType="VARCHAR" property="configName" />
+    <result column="config_file" jdbcType="VARCHAR" property="configFile" />
+    <result column="update_time" jdbcType="DATE" property="updateTime" />
+  </resultMap>
+  <!-- 获取数据总览-线路评分展示gridData-->
+	<select id="getDeareslutConfigXML" parameterType="com.cictec.yyjk.linenet.model.entity.NetDataConfig" resultType="com.cictec.yyjk.linenet.model.view.NetDataConfigValue">
+		SELECT
+			ndc.config_name configName,
+			ndc.config_file configFile
+		FROM
+			net_data_config ndc
+		<where>
+			<if test="configName != null and configName != ''">
+				AND ndc.config_name = #{configName}
+		 	</if>
+		 </where>
+	</select>
+	
+	<delete id="clearTabel">
+  		TRUNCATE TABLE net_xml_config
+  	</delete>
+  
+</mapper>

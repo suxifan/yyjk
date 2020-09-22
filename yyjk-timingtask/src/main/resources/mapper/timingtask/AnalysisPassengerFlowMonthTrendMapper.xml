@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisPassengerFlowMonthTrendMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisPassengerFlowMonthTrend">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="trend_uuid" jdbcType="VARCHAR" property="trendUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="upload_time_month" jdbcType="VARCHAR" property="uploadTimeMonth" />
+    <result column="upload_time_date" jdbcType="DATE" property="uploadTimeDate" />
+    <result column="person_count" jdbcType="INTEGER" property="personCount" />
+  </resultMap>
+
+   <!-- 统计临时客流表的当日累计客流，保存到客流月趋势表中-->
+   <select id="countPassengerNumber" resultMap="BaseResultMap">
+        WITH AA AS(
+            SELECT t3.org_uuid,to_char(t1.pfr_upload_time, 'yyyy-MM') AS upload_time_month,to_char(t1.pfr_upload_time, 'yyyy-MM-dd') AS upload_time_date,t1.pfr_get_on_number
+            FROM mid_passenger_flow_result t1 
+            LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+            <where>
+            	<if test="startTime != null">
+            		AND t1.pfr_upload_time >= #{startTime}
+            	</if>
+            	<if test="endTime != null">
+            		AND t1.pfr_upload_time &lt;= #{endTime}
+            	</if>
+                AND t2.line_isvalid = '1'
+                AND t2.line_drop_flag = '0'
+            </where>
+        )
+        SELECT AA.org_uuid,AA.upload_time_month,AA.upload_time_date,SUM(AA.pfr_get_on_number) AS person_count FROM AA 
+        GROUP BY AA.upload_time_month,AA.upload_time_date,AA.org_uuid
+    </select>
+    
+    <!-- 统计总公司客流月趋势 -->
+    <select id="getCompanyMonthTrendDatas" resultMap="BaseResultMap">
+        SELECT
+            upload_time_date,SUM(person_count) AS person_count
+        FROM
+            analysis_passenger_month_trend
+        <where>
+        	AND to_char(upload_time_date,'yyyy-MM-dd') >= #{dateTime}
+        	<if test="orgId != null and orgId != ''">
+        		AND org_uuid = #{orgId}
+        	</if>
+        </where>
+        GROUP BY upload_time_date
+        ORDER BY upload_time_date
+    </select>
+</mapper>

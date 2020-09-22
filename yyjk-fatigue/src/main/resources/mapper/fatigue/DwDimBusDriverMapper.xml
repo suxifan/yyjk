@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.DwDimBusDriverMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.DwDimBusDriver">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="drv_uuid" jdbcType="VARCHAR" property="drvUuid" />
+    <result column="drv_org_uuid" jdbcType="VARCHAR" property="drvOrgUuid" />
+    <result column="drv_line_uuid" jdbcType="VARCHAR" property="drvLineUuid" />
+    <result column="drv_name" jdbcType="VARCHAR" property="drvName" />
+    <result column="drv_sex" jdbcType="VARCHAR" property="drvSex" />
+    <result column="drv_birthday" jdbcType="TIMESTAMP" property="drvBirthday" />
+    <result column="drv_employee_id" jdbcType="VARCHAR" property="drvEmployeeId" />
+    <result column="drv_per_id" jdbcType="VARCHAR" property="drvPerId" />
+    <result column="drv_ic_card" jdbcType="VARCHAR" property="drvIcCard" />
+    <result column="drv_isvalid" jdbcType="CHAR" property="drvIsvalid" />
+    <result column="drv_create_time" jdbcType="TIMESTAMP" property="drvCreateTime" />
+    <result column="drv_drop_flag" jdbcType="CHAR" property="drvDropFlag" />
+    <result column="drv_type" jdbcType="VARCHAR" property="drvType" />
+  </resultMap>
+  
+     <resultMap type="com.cictec.yyjk.fatigue.model.entity.DwDimBusDriver" id="resultMap">
+       <result property="drvUuid" column="drv_uuid"/>
+       <result property="drvName" column="drv_name"/>
+       <result property="drvEmployeeId" column="drv_employee_id"/>
+       <result property="drvIcCard" column="drv_ic_card"/>
+    </resultMap>
+     <resultMap type="com.cictec.yyjk.fatigue.model.entity.DwDimBusDriver" id="driverResultMap">
+       <result property="drvEmployeeId" column="drv_employee_id"/>
+       <result property="drvIcCard" column="drv_ic_card"/>
+    </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_bus_driver
+  </delete>
+  
+  <!-- 司机列表 -->
+	<select id="selectAllBusDriver" parameterType="com.cictec.yyjk.fatigue.model.vo.DwDimBusDriverVo" resultMap="resultMap">
+		SELECT DISTINCT
+			t1.drv_name,
+			t1.drv_employee_id
+		FROM
+			dw_dim_bus_driver AS t1
+		<where>
+			t1.drv_drop_flag = '0' 
+			AND t1.drv_isvalid= '1'
+			AND t1.drv_employee_id is not null
+		    <if test="orgId != null and orgId != ''">
+		    	AND t1.drv_org_uuid = #{orgId}
+		    </if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND t1.drv_line_uuid in
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>
+		    <if test="drvName != null and drvName != ''">
+		   	 	AND (t1.drv_name like '%' || #{drvName} || '%' OR t1.drv_employee_id like '%' || #{drvEmployeeId} || '%' )
+		    </if>	
+		    <if test="drvEmployeeId != null and drvEmployeeId != ''">
+		   	 	AND (t1.drv_employee_id like '%' || #{drvEmployeeId} || '%' OR t1.drv_name like '%' || #{drvName} || '%')
+		    </if>	    	
+			<if test="lineUuid != null and lineUuid != ''">
+				AND t1.drv_line_uuid = #{lineUuid}
+			</if>
+		</where>
+	</select> 
+	
+	<!-- 司机列表 -->
+	<select id="selectAllBusDriverInfo" resultMap="driverResultMap">
+		SELECT DISTINCT
+			t1.drv_employee_id,
+			t1.drv_ic_card
+		FROM
+			dw_dim_bus_driver AS t1
+		<where>
+			t1.drv_drop_flag = '0' 
+			AND t1.drv_isvalid= '1'
+			AND t1.drv_employee_id is not null
+		</where>
+	</select> 
+	
+</mapper>

@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.report.mapper.DispatchAnalysisMapper">
+  <!--1.0 返回结果集 -->
+    <resultMap type="com.cictec.yyjk.report.model.entity.DispatchAnalysis" id="resultMap">
+        <result property="yAxisLabel" column="yaxis_label"/> 
+        <result property="xAxisLabel" column="xaxis_label"/>
+        <result property="analysisNumber" column="analysis_number"/>
+    </resultMap>
+    
+    <resultMap type="com.cictec.yyjk.report.model.vo.LineStationAnalysisVo" id="gridResultMap">
+        <result property="staName" column="sta_name"/>
+        <result property="getOnNumber" column="get_on_number"/>
+        <result property="getOffNumber" column="get_off_number"/> 
+        <result property="personNumber" column="person_number"/>
+        <result property="fullLoadRate" column="full_load_rate"/>   
+    </resultMap>
+    
+    <!-- 线路信息 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.LineInfoVo" id="lineResultMap">
+        <result property="lineName" column="line_name"/>
+        <result property="lineUuid" column="line_uuid"/>
+        <result property="parLineUuid" column="par_line_uuid"/>
+        <result property="orgName" column="org_name"/>
+        <result property="orgUuid" column="org_uuid"/>    
+    </resultMap>
+    
+	<!-- 站点信息 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.StationInfoVo" id="stationResultMap">
+        <result property="staName" column="sta_name"/>
+        <result property="staUuid" column="sta_uuid"/>
+    </resultMap>
+    
+   	<!-- 线路站点信息 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.LineStationInfoVo" id="lineStationResultMap">
+        <result property="lineUuid" column="line_uuid"/>
+        <result property="lineName" column="line_name"/>
+        <result property="lineType" column="line_type"/>
+        <result property="staUuid" column="sta_uuid"/>
+        <result property="staName" column="sta_name"/>
+        <result property="staSeq" column="sta_seq"/>
+    </resultMap> 
+
+	<!-- 客流高峰断面分析映射结果 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.SequenceDiagramAnalysisVo" id="sequenceResultMap">
+        <result property="busNumber" column="bus_number"/>
+        <result property="busClass" column="bus_class"/>
+        <result property="staName" column="sta_name"/>
+        <result property="timestamps" column="timestamps"/>   
+        <result property="uploadTimeIn" column="upload_time_in"/>
+        <result property="staSeq" column="sta_seq"/>  
+    </resultMap>
+    <!-- 线路客流运力运量分析映射结果 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.LineCapacityAnalysisVo" id="lineCapacityResultMap">
+        <result property="timeInterval" column="time_interval"/>
+        <result property="lineCapacity" column="line_capacity"/>
+        <result property="lineVolume" column="line_volume"/>
+        <result property="maxPersonCount" column="max_person_count"/>     
+    </resultMap>
+    
+    <!-- 站点等降量分析映射结果 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.StationOnOffAnalysisVo" id="stationOnOffResultMap">
+        <result property="timeDate" column="upload_time_date"/>
+        <result property="timeHour" column="upload_time_hour"/>
+        <result property="staName" column="sta_name"/>
+        <result property="getOnNumber" column="get_on_number"/>
+        <result property="getOffNumber" column="get_off_number"/>        
+    </resultMap>
+	
+	<!-- 线路站间运行时间分析映射结果 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.LineBetweenStationsRunningTimeAnalysisVo" id="runningTimeResultMap">
+        <result property="staName" column="sta_name"/>
+        <result property="timeHour" column="upload_time_hour"/>
+        <result property="timeLength" column="sta_length_time"/>
+    </resultMap>    
+    
+	<!-- 获取线路站点名 -->
+	<select id="getLineStationNames" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="java.lang.String">
+		SELECT t3.sta_name 
+		FROM dw_dim_bus_line t1 LEFT JOIN dw_dim_line_station t2 ON t1.line_uuid = t2.ls_line_uuid 
+		LEFT JOIN dw_dim_bus_station t3 ON t2.ls_sta_uuid = t3.sta_uuid 
+		<where>
+		 	<if test="lineId != null and lineId != ''">
+		 		AND t1.line_uuid = #{lineId}
+		 	</if>
+		 	<if test="type != null and type != ''">
+		 		AND t2.ls_line_type = #{type}
+		 	</if>
+		 	AND t2.ls_delete_flag = '0'
+			AND t3.sta_isvalid = '1'
+			AND t3.sta_drop_flag = '0' 
+			AND t1.line_isvalid = '1'
+			AND t1.line_drop_flag = '0'
+		 </where>
+		ORDER BY t2.ls_sequence
+	</select>
+	
+	<!-- 获取所有站点信息 -->
+	<select id="getStationInfo" resultMap="stationResultMap">
+		SELECT sta_name,sta_uuid FROM dw_dim_bus_station WHERE sta_isvalid = '1' AND sta_drop_flag = '0'
+	</select>
+	
+	<!-- 获取所有线路站点信息 -->
+	<select id="getAllLineStationInfo" resultMap="lineStationResultMap">
+		SELECT t1.line_name,t1.line_type,t3.sta_name,t3.sta_uuid,t2.ls_sequence as sta_seq
+		FROM dw_dim_bus_line t1 LEFT JOIN dw_dim_line_station t2 ON t1.line_uuid = t2.ls_line_uuid 
+		LEFT JOIN dw_dim_bus_station t3 ON t2.ls_sta_uuid = t3.sta_uuid 
+		WHERE t2.ls_delete_flag = '0'
+			AND t3.sta_isvalid = '1'
+			AND t3.sta_drop_flag = '0' 
+			AND t1.line_isvalid = '1'
+			AND t1.line_drop_flag = '0'
+	</select>
+
+	<!-- 获取线路信息 -->
+	<select id="getLineInfo" resultMap="lineResultMap">
+	    SELECT
+			t1.line_uuid,
+			t1.line_name,
+			t1.par_line_uuid,
+			t2.org_name,
+			t2.org_uuid
+		FROM
+			dw_dim_bus_line t1 LEFT JOIN dw_dim_bus_sys_org t2 ON t1.line_org_uuid = t2.org_uuid
+		WHERE
+			t1.line_isvalid = '1'
+		AND t1.line_drop_flag = '0'
+	</select>
+	
+	<!-- 线路客流高峰时刻分析(上下行数据) -->
+	<select id="getRushHourLinePassengerDatas" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		SELECT upload_time_week AS yaxis_label,upload_time_hour||'h' AS xaxis_label, SUM(pfr_get_on_number) AS analysis_number 
+		FROM analysis_prf_peak_month 
+		<where>
+			AND upload_time_hour >= '6'
+			AND upload_time_hour &lt;= '23'
+		 	<if test="month != null and month != ''">
+		 		AND upload_time_month = #{month}
+		 	</if>
+			<if test="lineId != null and lineId != ''">
+				AND line_uuid = #{lineId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+                AND line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>
+            </if>
+			<if test="type != null and type != ''">
+				AND line_type = #{type}
+			</if>			
+		</where>
+		GROUP BY upload_time_week,upload_time_hour
+		ORDER BY upload_time_week,upload_time_hour
+	</select>
+	
+	<!-- 线路客流高峰断面分析 -->
+	<select id="getSectionPassengerDatas" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH t1 AS(
+		SELECT *
+		 FROM analysis_prf_section_month 
+		 <where>
+		 	AND upload_time_hour >= '6'
+			AND upload_time_hour &lt;= '23'
+		 	<if test="month != null and month != ''">
+		 		AND upload_time_month = #{month}
+		 	</if>
+		 	<if test="lineId != null and lineId != ''">
+		 		AND line_uuid = #{lineId}
+		 	</if>
+		 	<if test="lineUuids != null and lineUuids.size() >0">
+                AND line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>
+            </if>
+		 	<if test="type != null and type != ''">
+		 		AND line_type = #{type}
+		 	</if>
+		 </where>
+		 ORDER BY to_number(sta_seq,'9999')
+		)
+		SELECT t1.upload_time_hour ||'h'  AS yaxis_label,t1.sta_name  AS xaxis_label,SUM(t1.prf_get_person_count) AS analysis_number
+		 FROM t1 
+		GROUP BY t1.upload_time_hour,t1.sta_name
+		ORDER BY t1.upload_time_hour
+	</select>
+	
+	<!-- 获取线路站点上车人数、下车人数、断面客流量和满载率 -->
+	<select id="getLineStationInfo" parameterType="com.cictec.yyjk.report.model.vo.GridChartQueryCondition" resultMap="gridResultMap">
+		WITH TT AS(
+			SELECT t1.line_name,t1.sta_name,t1.sta_seq,SUM(T1.pfr_get_on_number) as get_on_number,SUM(T1.pfr_get_off_number) as get_off_number,SUM(T1.prf_get_person_count) AS person_number,SUM(T1.bus_load_number) AS bus_load_number  
+			FROM (
+					SELECT line_name,sta_name,to_number(sta_seq,'9999') as sta_seq,pfr_get_on_number,pfr_get_off_number,prf_get_person_count,COALESCE(bus_load_number,56) AS bus_load_number  
+					FROM analysis_prf_fullload_day 
+					<where>
+						<if test="lineId != null and lineId != ''">
+							AND line_uuid = #{lineId}
+						</if>
+						<if test="lineUuids != null and lineUuids.size() >0">
+			                AND line_uuid in 
+			                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+			                    #{lineUuid}
+			                </foreach>
+			            </if>
+						<if test="dateTime != null and dateTime != ''">
+							AND to_char(upload_time_date,'yyyy-MM-dd') = #{dateTime}
+						</if>
+						<if test="type != null and type != ''">
+							AND line_type = #{type}
+						</if>
+						<if test="startHour != null and startHour != ''">
+							AND upload_time_hour >= #{startHour}
+						</if>
+						<if test="endHour != null and endHour != ''">
+							AND upload_time_hour &lt;= #{endHour}
+						</if>
+						AND sta_name IS NOT NULL					
+					</where>
+				) T1
+			GROUP BY t1.line_name,t1.sta_name,t1.sta_seq
+			ORDER BY t1.sta_seq 
+			)
+		SELECT TT.sta_name,
+		 	TT.get_on_number,
+		 	TT.get_off_number,
+		 	TT.person_number,
+		 	round((TT.person_number::numeric/TT.bus_load_number::numeric) * 100 ,2) full_load_rate
+		FROM TT 
+	</select>
+	
+	<!-- 车辆发车趟次时序图  analysis_arrive_volume_day -->
+	<select id="getSequenceDiagramInfo" parameterType="com.cictec.yyjk.report.model.vo.GridChartQueryCondition" resultMap="sequenceResultMap">
+		WITH t1 AS(
+			SELECT
+				line_uuid,line_name,sta_name,bus_plate_number,to_number(sta_seq,'9999') as sta_seq, COALESCE(upload_time_in,upload_time_out) AS upload_time_in,upload_time_hour,bus_class
+			FROM
+				${dynamicTableName}
+			<where>
+				<if test="dateTime != null and dateTime != ''">
+					AND upload_time_date = #{dateTime}
+				</if>
+				<if test="busPlateNumbers != null and busPlateNumbers.size() > 0">
+					AND bus_plate_number IN 
+					<foreach collection="busPlateNumbers" item="item" open="(" separator="," close=")">
+						#{item}
+					</foreach>
+				</if>		
+				<if test="lineId != null and lineId != ''">
+					AND line_uuid = #{lineId}
+				</if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+	                AND line_uuid in 
+	                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+	                    #{lineUuid}
+	                </foreach>
+	            </if>
+				<if test="type != null and type != ''">
+					AND line_type = #{type}
+				</if>
+				<if test="startHour != null and startHour != ''">
+					AND upload_time_hour >= #{startHour}
+				</if>
+				<if test="endHour != null and endHour != ''">
+					AND upload_time_hour &lt;= #{endHour}
+				</if>
+				AND upload_time_in is not null	
+				AND bus_class is not null	
+			</where>
+			ORDER BY 6,5
+		)
+		SELECT t1.bus_plate_number as bus_number,t1.sta_name,t1.sta_seq,t1.upload_time_in,(extract(epoch from t1.upload_time_in)- 8*3600) AS timestamps,t1.bus_class 
+		FROM t1
+	</select>
+	
+	<!-- 线路站间运行时间分析 -->
+	<select id="getLineBetweenStationsRunningTimeInfo" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="runningTimeResultMap">
+		SELECT
+			sta_name,to_number(sta_seq,'9999') as sta_seq,upload_time_hour,sta_length_time
+		FROM
+			analysis_length_time_month
+		<where>
+		 	AND upload_time_hour >= '6'
+			AND upload_time_hour &lt;= '23'		
+			<if test="month != null and month != ''">
+				AND	upload_time_month = #{month}
+			</if>
+			<if test="lineId != null and lineId != ''">
+				AND line_uuid = #{lineId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+                AND line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>
+            </if>
+			<if test="type != null and type != ''">
+				AND line_type = #{type}
+			</if>
+		</where>
+		ORDER BY sta_seq
+	</select>
+	<!-- 线路站间运行时间分析   获取小时，作为系列名-->
+	<select id="getLineBetweenStationsRunningTimeHours" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="java.lang.String">
+		SELECT
+			DISTINCT upload_time_hour
+		FROM
+			analysis_length_time_month
+		<where>
+		 	AND upload_time_hour >= '6'
+			AND upload_time_hour &lt;= '23'	
+			<if test="month != null and month != ''">
+				AND	upload_time_month = #{month}
+			</if>
+			<if test="lineId != null and lineId != ''">
+				AND line_uuid = #{lineId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+               AND line_uuid in 
+               <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                   #{lineUuid}
+               </foreach>
+           	</if>
+			<if test="type != null and type != ''">
+				AND line_type = #{type}
+			</if>
+		</where>
+		ORDER BY upload_time_hour
+	</select>
+	<!-- 线路运力运量分析 -->
+	<select id="getLineCapacityInfo" parameterType="com.cictec.yyjk.report.model.vo.GridChartQueryCondition" resultMap="lineCapacityResultMap">
+		SELECT
+			upload_time_quarter as time_interval,
+			bus_load_number as line_capacity,
+			pfr_get_on_number as line_volume,
+			prf_get_person_count as max_person_count
+		FROM
+			analysis_prf_capacity_volume_day
+		<where>
+		 	AND substr(upload_time_quarter,1,2) >= '06'
+			AND substr(upload_time_quarter,1,2) &lt;= '22'	
+			<if test="dateTime != null and dateTime != ''">
+				AND	to_char(upload_time_date,'yyyy-MM-dd') = #{dateTime}		
+			</if>
+			<if test="lineId != null and lineId != ''">
+				AND line_uuid = #{lineId}				
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+               AND line_uuid in 
+               <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                   #{lineUuid}
+               </foreach>
+           	</if>
+			<if test="type != null and type != ''">
+				AND line_type = #{type}			
+			</if>
+		</where>
+		ORDER BY upload_time_quarter		
+	</select>
+	
+	<!-- 站点等降量分析 -->
+	<select id="getStationOnOffInfo" parameterType="com.cictec.yyjk.report.model.vo.StationOnOffQueryCondition" resultMap="stationOnOffResultMap">
+		WITH t1 AS(
+			SELECT
+				to_char(upload_time_date,'yyyy-MM-dd') as upload_time_date ,sta_name,upload_time_hour,pfr_get_on_number as get_on_number,pfr_get_off_number as get_off_number
+			FROM
+				analysis_prf_sta_on_off_day
+			<where>
+				<if test="startDate != null and startDate != ''">
+					AND	to_char(upload_time_date,'yyyy-MM-dd') >= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					AND	to_char(upload_time_date,'yyyy-MM-dd') &lt;= #{endDate}
+				</if>
+				<if test="stationIds != null and stationIds.size() > 0">
+					AND sta_uuid IN 
+					<foreach collection="stationIds" item="item" open="(" separator="," close=")">
+						#{item}
+					</foreach>
+				</if>
+				<if test="startHour != null and startHour != ''">
+					AND upload_time_hour >= #{startHour}
+				</if>
+				<if test="endHour != null and endHour != ''">
+					AND upload_time_hour &lt;= #{endHour}
+				</if>
+			</where>
+		)
+		SELECT t1.upload_time_date,t1.sta_name,t1.upload_time_hour,SUM(t1.get_on_number) AS get_on_number,SUM(t1.get_off_number) AS get_off_number  
+		FROM t1 
+		GROUP BY t1.upload_time_date,t1.sta_name,t1.upload_time_hour
+		ORDER BY t1.upload_time_date,t1.sta_name,t1.upload_time_hour
+	</select>
+
+</mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.VoicepromptTempTypeMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.VoicepromptTempType">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="voicetemp_type_uuid" jdbcType="VARCHAR" property="voicetempTypeUuid" />
+    <result column="voicetemp_content" jdbcType="VARCHAR" property="voicetempContent" />
+    <result column="voicetemp_type_code" jdbcType="VARCHAR" property="voicetempTypeCode" />
+  </resultMap>
+
+	<!-- 获取提醒类型数据 -->
+	<select id="selectVoicepromptType" parameterType="com.cictec.yyjk.fatigue.model.vo.VoicepromptTempTypeVo" resultType="com.cictec.yyjk.fatigue.model.entity.VoicepromptTempType">
+		SELECT
+			t1.voicetemp_type_uuid voicetempTypeUuid,
+			t1.voicetemp_content voicetempContent,
+			t1.voicetemp_type_code voicetempTypeCode
+		FROM
+			dw_voiceprompt_temp_type t1
+		<where>
+			<if test="voicetempTypeUuid != null and voicetempTypeUuid != ''">
+			    AND t1.voicetemp_type_uuid = #{voicetempTypeUuid}
+			</if>
+			<if test="voicetempTypeCode != null and voicetempTypeCode != ''">
+			    AND t1.voicetemp_type_code like '%' ||  #{voicetempTypeCode} || '%'
+			</if>
+			<if test="voicetempContent != null and voicetempContent != ''">
+			    AND t1.voicetemp_content like '%' ||  #{voicetempContent} || '%'
+			</if>
+		</where>
+	</select>
+	
+	<!-- 根据提醒类型ID查询提醒内容列表 -->
+	<select id="getVmContentsByVtUuid" parameterType="com.cictec.yyjk.fatigue.model.vo.VoicepromptTempTypeVo" resultType="com.cictec.yyjk.fatigue.model.entity.VoicepromptTemp">
+		SELECT
+			t1.voicetemp_uuid voicetempUuid,
+			t1.voicetemp_message_content voicetempMessageContent,
+			t1.voicetemp_type_uuid voicetempTypeUuid
+		FROM
+			dw_voiceprompt_temp t1
+		<where>
+			<if test="voicetempUuid != null and voicetempUuid != ''">
+			    AND t1.voicetemp_uuid = #{voicetempUuid}
+			</if>
+			<if test="voicetempMessageContent != null and voicetempMessageContent != ''">
+			    AND t1.voicetemp_message_content = #{voicetempMessageContent}
+			</if>
+			<if test="voicetempTypeUuid != null and voicetempTypeUuid != ''">
+			    AND t1.voicetemp_type_uuid = #{voicetempTypeUuid}
+			</if>
+		</where>
+	</select>
+</mapper>

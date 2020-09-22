@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexPfLineDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexPfLineDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="brush_count" jdbcType="VARCHAR" property="brushCount" />
+    <result column="zzl" jdbcType="VARCHAR" property="zzl" />
+    <result column="pjyj" jdbcType="VARCHAR" property="pjyj" />
+    <result column="p_date" jdbcType="VARCHAR" property="pDate" />
+  </resultMap>
+  <!-- 获取线路客流综合查询列表-->
+	<select id="getIndexPfLineDay" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfLineDayValue">
+		SELECT
+			ndb.company,ndb.line_uuid lineUuid,
+			nipld.line_number lineNumber,
+			nipld.arrow,
+			nipld.brush_count brushCount,
+			nipld.zzl,
+			nipld.pjyj
+		FROM net_index_pf_line_day nipld
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = nipld.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipld.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipld.p_date = #{pDate}
+		 	</if>
+		 </where>
+		ORDER BY ndb.company,nipld.line_number,nipld.arrow
+	</select>
+	
+	<!-- 获取数据总览线路日均客流TOP10列表-->
+	<select id="getDayPfTOP10List" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfLineDayValue">
+		 <!-- SELECT
+			*
+		FROM
+			(
+				SELECT
+					t2.line_number lineNumber,
+					t2.brush_count brushCount
+				FROM
+					(
+						SELECT
+							t1.line_number,
+							round(
+								CAST (
+									SUM (
+										CAST (t1.brush_count AS NUMERIC)
+									) AS NUMERIC
+								) / CAST (COUNT(t1.p_date) AS NUMERIC),
+								0
+							) brush_count
+						FROM
+							net_index_pf_line_day t1
+						GROUP BY
+							t1.line_number
+					) t2
+				ORDER BY
+					t2.brush_count DESC
+				LIMIT 10
+			) t3
+		ORDER BY
+			brushCount ASC -->
+		SELECT
+			*
+		FROM
+			(
+				SELECT
+					t2.line_number lineNumber,
+					round(t2.brush_count,0) brushCount
+				FROM
+					(
+						SELECT 
+								t.line_number,AVG(t.brush_count) brush_count 
+						FROM (
+							SELECT
+								t1.line_number,t1.p_date,
+								SUM (CAST (t1.brush_count AS NUMERIC)) brush_count
+							FROM
+								net_index_pf_line_day t1
+							WHERE
+								to_date(t1.p_date,'YYYY-MM-dd') >=(CURRENT_DATE - 8) AND to_date(t1.p_date,'YYYY-MM-dd') &lt;=(CURRENT_DATE - 2) 
+							GROUP BY
+								t1.line_number,t1.p_date
+						) t GROUP BY t.line_number
+					) t2
+				ORDER BY
+					t2.brush_count DESC
+				LIMIT 10
+			) t3
+		ORDER BY
+			brushCount ASC
+	</select>
+</mapper>

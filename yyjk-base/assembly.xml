@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd ">
+
+	<!-- <id>dist-assembly</id> -->
+	<id>base</id> 
+
+	<formats>
+		<!-- zip, tar, tar.gz, tar.bz2, jar, dir, war 也是支持的 -->
+		<!-- 可以同时打多种格式的包 -->
+		<format>dir</format>
+		<format>zip</format>
+	</formats>
+
+	<includeBaseDirectory>false</includeBaseDirectory>
+	<dependencySets>
+		<dependencySet>
+			<useProjectArtifact>false</useProjectArtifact>
+			<useTransitiveDependencies>true</useTransitiveDependencies>
+			<outputDirectory>lib</outputDirectory>
+			<unpack>false</unpack>
+			<excludes>
+				<exclude>${project.groupId}:*:*</exclude>
+			</excludes>
+		</dependencySet>
+	</dependencySets>
+
+	<fileSets>
+		<!--&lt;!&ndash; 把项目的配置文件，打包进zip文件的config目录 &ndash;&gt; -->
+		<fileSet>
+			<directory>${project.basedir}/src/main/resources</directory>
+			<outputDirectory>config/</outputDirectory>
+			<includes>
+				<include>application*.properties</include>
+				<include>logback.xml</include>
+			</includes>
+		</fileSet>
+		<!--&lt;!&ndash; 把项目的脚本文件目录（ src/main/scripts ）中的启动脚本文件，打包进zip文件的跟目录 &ndash;&gt; -->
+		<!-- 		
+		<fileSet>
+			<directory>${project.basedir}</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>start.sh</include>
+				<include>stop.sh</include>
+				<include>*.bat</include>
+			</includes>
+		</fileSet> 
+		-->
+		<fileSet>
+			<directory>${project.basedir}/src/main/resources</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>*.sh</include>
+				<include>*.bat</include>
+			</includes>
+			<fileMode>0755</fileMode>
+		</fileSet>
+
+
+		<fileSet>
+			<directory>${basedir}/../yyjk-base/target/lib</directory>
+			<outputDirectory>lib</outputDirectory>
+			<includes>
+				<include>*.jar</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${basedir}/../yyjk-base/target/</directory>
+			<outputDirectory>${file.separator}</outputDirectory>
+			<includes>
+				<include>*.jar</include>
+			</includes>
+		</fileSet>
+
+	</fileSets>
+
+</assembly>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexDeaLinescoreMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexDeaLinescore">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="sta_rational" jdbcType="REAL" property="staRational" />
+    <result column="safe_rational" jdbcType="REAL" property="safeRational" />
+    <result column="con_rational" jdbcType="REAL" property="conRational" />
+    <result column="rap_rational" jdbcType="REAL" property="rapRational" />
+    <result column="score" jdbcType="REAL" property="score" />
+  </resultMap>
+  
+  <!-- 获取数据总览-线路评分展示gridData-->
+	<select id="getDeaLineScoreList" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexDeaLinescoreValue">
+		SELECT
+			ndb.company,
+			ndb.line_uuid lineUuid,
+			nidl.line_number lineNumber,
+			nidl.sta_rational staRational,
+			nidl.safe_rational safeRational,
+			nidl.con_rational conRational,
+			nidl.rap_rational rapRational,
+			nidl.score,t1.level_name levelName
+		FROM
+			net_index_dea_linescore nidl
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = nidl.line_number
+		LEFT JOIN net_index_level_entropy_result t1 ON t1.line_number = nidl.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		ORDER BY nidl.score desc
+	</select>
+</mapper>

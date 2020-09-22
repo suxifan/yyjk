@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseBusVideoInfoMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseBusVideoInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="bus_uuid" jdbcType="VARCHAR" property="busUuid" />
+    <result column="video1" jdbcType="VARCHAR" property="video1" />
+    <result column="video2" jdbcType="VARCHAR" property="video2" />
+    <result column="video3" jdbcType="VARCHAR" property="video3" />
+    <result column="video4" jdbcType="VARCHAR" property="video4" />
+    <result column="video5" jdbcType="VARCHAR" property="video5" />
+    <result column="video6" jdbcType="VARCHAR" property="video6" />
+    <result column="video7" jdbcType="VARCHAR" property="video7" />
+    <result column="video8" jdbcType="VARCHAR" property="video8" />
+    <result column="video9" jdbcType="VARCHAR" property="video9" />
+    <result column="video10" jdbcType="VARCHAR" property="video10" />
+    <result column="video11" jdbcType="VARCHAR" property="video11" />
+    <result column="video12" jdbcType="VARCHAR" property="video12" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="bus_plate_number" jdbcType="VARCHAR" property="busPlateNumber" />
+  </resultMap>
+  
+  <select id="queryBusVideos" parameterType="com.cictec.yyjk.base.model.vo.BaseBusVideoInfoVo" resultMap="BaseResultMap">
+    SELECT t1.bus_uuid,t1.bus_plate_number,t2.uuid,t2.video1,t2.video2,t2.video3,t2.video3,t2.video4,t2.video5,t2.video6,t2.video7,t2.video8,t2.video9,t2.video10,t2.video11,t2.video12 
+    FROM dw_dim_bus t1 
+        LEFT JOIN base_bus_video_info t2 ON t1.bus_uuid = t2.bus_uuid
+    <where>
+        <if test="orgUuid != null and orgUuid != ''">
+            AND t1.bus_org_uuid = #{orgUuid}
+        </if>
+        <if test="lineUuid != null and lineUuid != ''">
+            AND t1.bus_line_uuid = #{lineUuid}
+        </if>
+        <if test="busPlateNumbers != null and busPlateNumbers.size()>0">
+            AND t1.bus_plate_number in 
+            <foreach collection="busPlateNumbers" item="busPlateNumber" open="(" separator="," close=")" >
+                #{busPlateNumber}
+            </foreach>    
+        </if>
+    </where> 
+  </select>
+</mapper>

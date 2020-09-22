@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TSysDatadictMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TSysDatadict">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="pl_uuid" jdbcType="VARCHAR" property="plUuid" />
+    <result column="pl_value" jdbcType="VARCHAR" property="plValue" />
+    <result column="pl_display" jdbcType="VARCHAR" property="plDisplay" />
+    <result column="pl_sort" jdbcType="NUMERIC" property="plSort" />
+    <result column="pl_isvalid" jdbcType="CHAR" property="plIsvalid" />
+    <result column="pl_warn_level" jdbcType="VARCHAR" property="plWarnLevel" />
+    <result column="pl_remark" jdbcType="VARCHAR" property="plRemark" />
+  </resultMap>
+  
+  
+   <select id="selectWarnTypeNotEqualNow"  parameterType="com.cictec.yyjk.fatigue.model.entity.TSysDatadict" resultMap="BaseResultMap">
+	select t.* from dw_dim_pl_sys_datadict t
+	<where>
+		1 = 1 
+		<if test="plUuid != null and plUuid != '' "><![CDATA[ AND t.pl_uuid <> #{plUuid} ]]></if>	
+		<if test="plValue != null and plValue != '' "><![CDATA[ AND t.pl_value = #{plValue} ]]></if>	
+	</where>  
+	  
+  </select>
+  
+  
+  <select id="selectWarnTypeList"  parameterType="com.cictec.yyjk.fatigue.model.vo.TSysDatadictVo" resultMap="BaseResultMap">
+	select t.* from dw_dim_pl_sys_datadict t
+	<where>
+		1 = 1 
+		<if test="warnLevel != null and warnLevel != '' "><![CDATA[ AND t.pl_warn_level = #{warnLevel} ]]></if>	
+	</where>  
+	   ORDER BY
+	   t.pl_sort DESC
+  </select>
+  
+  <select id="selectList"  parameterType="com.cictec.yyjk.fatigue.model.vo.TSysDatadictVo" resultType="com.cictec.yyjk.fatigue.model.vo.CommonVo">
+	select t.pl_uuid id,t.pl_display "value",t.pl_value code from dw_dim_pl_sys_datadict t
+	<where>
+		1 = 1 
+		<if test="plIsvalid != null and plIsvalid != '' "><![CDATA[ AND t.pl_isvalid = #{plIsvalid} ]]></if>	
+	</where>  
+	   ORDER BY
+	   t.pl_sort DESC
+  </select>
+  
+  
+  <select id="queryByValues" parameterType="java.util.List" resultType="Map">
+ 	SELECT pl_display plDisplay,pl_value plValue 
+ 	FROM dw_dim_pl_sys_datadict 
+ 	<where>
+ 	   <if test="list != null and list.size()>0">
+ 		AND pl_value IN 
+ 		<foreach collection="list" item="item" open="(" separator="," close=")">
+ 			#{item}
+ 		</foreach>
+ 	   </if>
+ 	</where>
+	ORDER BY pl_sort 
+  </select>
+  
+  <select id="queryAll" parameterType="java.util.List" resultType="Map">
+ 	SELECT pl_display plDisplay,pl_value plValue 
+ 	FROM dw_dim_pl_sys_datadict 
+	ORDER BY pl_sort 
+  </select>
+  
+</mapper>

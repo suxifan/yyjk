@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseAccessPageLogMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseAccessPageLog">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="log_uuid" jdbcType="BIGINT" property="logUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="user_uuid" jdbcType="VARCHAR" property="userUuid" />
+    <result column="role_uuid" jdbcType="VARCHAR" property="roleUuid" />
+    <result column="access_model_name" jdbcType="VARCHAR" property="accessModelName" />
+    <result column="access_page_name" jdbcType="VARCHAR" property="accessPageName" />
+    <result column="access_ip" jdbcType="VARCHAR" property="accessIp" />
+    <result column="access_time" jdbcType="TIMESTAMP" property="accessTime" />
+    <result column="access_duration" jdbcType="BIGINT" property="accessDuration" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+  </resultMap>
+  
+  <select id="getAccessPageLogs" parameterType="com.cictec.yyjk.base.model.vo.BaseAccessPageLogVo" resultMap="BaseResultMap">
+	SELECT t1.log_uuid, t2.org_name,t3.user_account,t4.role_name,t1.access_model_name,t1.access_page_name,t1.access_ip,t1.access_duration,t1.access_time,t1.create_time 
+  	FROM base_access_log t1 LEFT JOIN dw_dim_bus_sys_org t2 ON t1.org_uuid = t2.org_uuid 
+	LEFT JOIN base_user_info t3 ON t1.user_uuid = t3.user_id 
+	LEFT JOIN base_role_info t4 ON t1.role_uuid = t4.role_id
+	  <where>
+	  	<if test="orgId != null and orgId !='' ">
+	  		AND t1.org_uuid = #{orgId}
+	  	</if>
+	  	<if test="userId != null and userId !='' ">
+	  		AND t3.user_id = #{userId}
+	  	</if>
+	  	<if test="accessIp != null and accessIp !='' ">
+	  		AND t1.access_ip like '%'|| #{accessIp} ||'%'
+	  	</if>
+	  	<if test="accessModelName != null and accessModelName !='' ">
+	  		AND t1.access_model_name = #{accessModelName}
+	  	</if>
+	  	<if test="accessPageName != null and accessPageName !='' ">
+	  		AND t1.access_page_name = #{accessPageName}
+	  	</if>	  		  	
+	  	<if test="startTime != null">
+	  		AND t1.access_time >= #{startTime}
+	  	</if>
+	  	<if test="endTime != null">
+	  		AND t1.access_time &lt;= #{endTime}
+	  	</if>
+	  </where>
+	  ORDER BY access_time DESC
+  </select>  
+</mapper>

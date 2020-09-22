@@ -1,0 +1,1477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.report.mapper.TempPltwarnMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.report.model.entity.TempPltwarn">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="warn_uuid" jdbcType="VARCHAR" property="warnUuid" />
+    <result column="device_id" jdbcType="VARCHAR" property="deviceId" />
+    <result column="device_code" jdbcType="VARCHAR" property="deviceCode" />
+    <result column="warn_type" jdbcType="VARCHAR" property="warnType" />
+    <result column="warn_time" jdbcType="TIMESTAMP" property="warnTime" />
+    <result column="warn_id" jdbcType="VARCHAR" property="warnId" />
+    <result column="warn_content" jdbcType="VARCHAR" property="warnContent" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="hex_location_buf" jdbcType="VARCHAR" property="hexLocationBuf" />
+    <result column="lat" jdbcType="VARCHAR" property="lat" />
+    <result column="lng" jdbcType="VARCHAR" property="lng" />
+    <result column="speed" jdbcType="VARCHAR" property="speed" />
+    <result column="warn_source" jdbcType="VARCHAR" property="warnSource" />
+    <result column="driver_name" jdbcType="VARCHAR" property="driverName" />
+    <result column="driver_num" jdbcType="VARCHAR" property="driverNum" />
+    <result column="warn_date" jdbcType="VARCHAR" property="warnDate" />
+    <result column="warn_level" jdbcType="VARCHAR" property="warnLevel" />    
+    <result column="warn_end_time" jdbcType="TIMESTAMP" property="warnEndTime" />
+    <result column="warn_end_lat" jdbcType="VARCHAR" property="warnEndLat" />    
+    <result column="warn_end_lng" jdbcType="VARCHAR" property="warnEndLng" /> 
+    <result column="handle_result" jdbcType="VARCHAR" property="handleResult" />
+    <result column="handle_suggestion" jdbcType="VARCHAR" property="handleSuggestion" />
+    <result column="handle_user" jdbcType="VARCHAR" property="handleUser" />
+    <result column="handle_time" jdbcType="TIMESTAMP" property="handleTime" /> 
+    <result column="audit_status" jdbcType="VARCHAR" property="auditStatus" />    
+    <result column="audit_suggestion" jdbcType="VARCHAR" property="auditSuggestion" />
+    <result column="audit_time" jdbcType="TIMESTAMP" property="auditTime" /> 
+    <result column="audit_user" jdbcType="VARCHAR" property="auditUser" /> 
+  </resultMap>
+  
+  <resultMap id="resultWarnMap" type="com.cictec.yyjk.report.model.vo.WarnInofVo">
+        <result column="bus_plate_number" property="busNumber" />
+        <result column="bus_self_code" property="busSelfCode" />        
+        <result column="org_uuid" property="orgUuid" />
+        <result column="org_name" property="orgName" />
+        <result column="line_uuid" property="lineUuid" />
+        <result column="line_name" property="lineName" />
+        <result column="warn_type" property="warnType" />
+        <result column="warn_label" property="warnLabel" />
+        <result column="warn_level" property="warnLevel" />
+        <result column="warn_level_label" property="warnLevelLabel" />
+        <result column="warn_time" property="warnTime" />
+        <result column="warn_number" property="warnNumber" />
+        <result column="warn_speed" property="warnSpeed" />
+        <result column="device_code" property="warnDeviceCode" />
+    </resultMap>
+    
+  	<resultMap id="resultBadDrivingMap" type="com.cictec.yyjk.report.model.vo.BadDrivingInfo">
+        <result column="org_uuid" property="orgUuid" />
+        <result column="org_name" property="orgName" />
+        <result column="line_name" property="lineName" />
+        <result column="bus_plate_number" property="busPlateNumber" />                        
+        <result column="driver_name" property="driverName" />
+        <result column="driver_num" property="driverNum" />
+        <result column="total_warn" property="totalWarn" />
+    </resultMap>
+    
+  	<resultMap id="resultWarnTimeMap" type="com.cictec.yyjk.report.model.data.DriverRankingValue">
+        <result column="org_name" property="orgName" />
+        <result column="line_name" property="lineName" />     
+        <result column="driver_name" property="driverName" />
+        <result column="driver_num" property="driverNum" />
+        <result column="warn_fatigue" property="warnFatigue" />
+        <result column="warn_smoking" property="warnSmoking" />        
+        <result column="warn_phone" property="warnPhone" />
+        <result column="warn_distraction" property="warnDistraction" />
+        <result column="warn_abnormal" property="warnAbnormal" />
+        <result column="warn_total_num" property="warnTotalNum" />
+        <result column="warn_type" property="warnType" />
+        <result column="warn_type_name" property="warnTypeName" />        
+        <result column="warn_level" property="warnLevel" />
+        <result column="warn_speed" property="warnSpeed" />
+        <result column="warn_time" property="warnTime" />
+    </resultMap>      
+
+    <!-- 实时获取疲劳驾驶报警信息 -->
+    <select id="getWarnInfos" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnMap">
+		WITH aa AS(
+			SELECT t4.bus_uuid,t4.bus_plate_number,t4.bus_self_code,t5.org_uuid,t5.org_name,t6.line_uuid,t6.line_name,T1.warn_type,t1.device_code,t1.speed AS warn_speed,
+				t7.pl_display AS warn_label,t7.pl_warn_level as warn_level,t7.pl_remark as warn_level_label,to_char(t1.warn_time,'yyyy-MM-dd HH24:mi:ss') as warn_time 
+				,t1.device_id,t4.bus_isvalid,t4.bus_drop_flag,t5.org_enabled,t5.org_drop_flag,t6.line_isvalid,t6.line_drop_flag,t7.pl_isvalid
+			FROM temp_pl_t_warn t1 
+					LEFT JOIN dw_dim_other_bus_device t3 ON t1.device_id = t3.dev_uuid 
+					LEFT JOIN dw_dim_bus t4 ON t3.bus_uuid = t4.bus_uuid
+					LEFT JOIN dw_dim_bus_sys_org t5 ON t4.bus_org_uuid = t5.org_uuid
+					LEFT JOIN dw_dim_bus_line t6 ON t4.bus_line_uuid = t6.line_uuid
+					LEFT JOIN dw_dim_pl_sys_datadict t7 ON t1.warn_type = t7.pl_value
+		        	LEFT JOIN (
+						SELECT
+							COUNT (*) AS twmc,warn_uuid
+						FROM
+							temp_pl_t_warn_media
+				        <where>
+							<if test="startTime != null">
+								AND create_time >= #{startTime}
+							</if>
+							<if test="endTime != null">
+								AND create_time &lt;= #{endTime}
+							</if>
+				        </where> 
+						GROUP BY
+							warn_uuid
+						HAVING
+							COUNT (*) > 0
+					)t8 on t8.warn_uuid = t1.warn_uuid 	
+				<where>
+					AND t8.twmc > 0 
+					AND t1.handle_suggestion IS NULL
+					<if test="startTime != null">
+						AND t1.warn_time >= #{startTime}
+					</if>
+					<if test="endTime != null">
+						AND t1.warn_time &lt;= #{endTime}
+					</if>
+				    <if test="orgId != null and orgId != ''">
+				   	 	AND t5.org_uuid = #{orgId}
+				    </if>
+					<if test="lineUuids != null and lineUuids.size() >0">
+						AND t6.line_uuid in 
+						<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+							#{lineUuid}
+						</foreach>
+					</if>				    
+				    <if test="busNumber != null and busNumber != ''">
+				   	 	AND t4.bus_plate_number like '%' || #{busNumber} || '%'
+				    </if>
+				    <if test="busSelfCode != null and busSelfCode != ''">
+				   	 	AND t4.bus_self_code like '%' || #{busSelfCode} || '%'
+				    </if>	    
+					<if test="warnTypes != null and warnTypes.size() >0">
+						AND t1.warn_type in 
+						<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+							#{warnType}
+						</foreach>
+					</if>
+					<if test="handleResults !=null and handleResults.size() >0">
+						AND t1.handle_result in 
+						<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						 	#{handleResult}
+						</foreach>
+					</if>
+					<if test="auditStatus !=null and auditStatus.size() >0">
+						AND t1.audit_status in 
+						<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+						 	#{auditStatu}
+						</foreach>
+					</if>					
+				</where>
+				ORDER BY t1.warn_time DESC
+			)
+			SELECT aa.bus_uuid,aa.bus_plate_number,aa.bus_self_code,aa.org_uuid,aa.org_name,aa.line_uuid,aa.line_name,aa.warn_type,aa.device_code,aa.warn_speed,aa.warn_label,aa.warn_level,aa.warn_level_label,aa.warn_time 
+			FROM aa 
+			WHERE aa.pl_isvalid = '1' 
+			AND aa.device_id IS NOT NULL
+			AND aa.bus_isvalid = '1' 
+			AND aa.bus_drop_flag = '0' 
+			AND aa.org_enabled = '1' 
+			AND aa.org_drop_flag = '0'
+			AND aa.line_isvalid = '1' 
+			AND aa.line_drop_flag = '0'	
+     </select>
+
+	 <!--ws推送      获取未处理告警 后端全量查询，前端自行过滤结果 -->
+	 <select id="getNoHandleWarns" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="com.cictec.yyjk.fatigue.model.entity.TWarn">
+		SELECT t1.warn_uuid warnUuid,t1.device_code devCode,t4.bus_org_uuid orgUuid,t4.bus_line_uuid lineUuid,t5.org_name orgName,t6.line_name lineName,t4.bus_plate_number busPlateNumber,t4.bus_self_code busSelfCode,t1.driver_iccard driverNum,t1.driver_name || ' ' || t1.driver_iccard driverName,T1.warn_type warnType,t1.speed,t7.pl_display warnTypeName,to_char(t1.warn_time,'yyyy-MM-dd HH24:mi:ss') as warnTime,t1.handle_result handleResult,t1.handle_suggestion handleSuggestion,
+		t1.audit_status auditStatus,t1.audit_suggestion auditSuggestion,t1.audit_time auditTime,t1.audit_user auditUser,t1.handle_user handleUser,t1.handle_time handleTime,t1.warn_level warnLevel,t1.lat,t1.lng
+		FROM temp_pl_t_warn t1 
+		LEFT JOIN dw_dim_other_bus_device t3 ON t1.device_id = t3.dev_uuid 
+		LEFT JOIN dw_dim_bus t4 ON t3.bus_uuid = t4.bus_uuid
+		LEFT JOIN dw_dim_bus_sys_org t5 ON t4.bus_org_uuid = t5.org_uuid
+		LEFT JOIN dw_dim_bus_line t6 ON t4.bus_line_uuid = t6.line_uuid
+		LEFT JOIN dw_dim_pl_sys_datadict t7 ON t1.warn_type = t7.pl_value
+       	LEFT JOIN (
+			SELECT
+				COUNT (*) AS twmc,warn_uuid
+			FROM
+				temp_pl_t_warn_media
+	        <where>
+				<if test="startTime != null">
+					AND create_time >= #{startTime}
+				</if>
+				<if test="endTime != null">
+					AND create_time &lt;= #{endTime} 
+				</if>		        
+	        </where>
+			GROUP BY
+				warn_uuid
+			HAVING
+				COUNT (*) > 0
+		)t8 on t8.warn_uuid = t1.warn_uuid 	
+		<where>
+			AND t8.twmc > 0
+       		AND t1.handle_result = '0'	
+       		AND t1.handle_suggestion IS NULL
+			AND t1.device_id IS NOT NULL
+			AND t4.bus_isvalid = '1' 
+			AND t4.bus_drop_flag = '0' 
+			AND t5.org_enabled = '1' 
+			AND t5.org_drop_flag = '0'
+			AND t6.line_isvalid = '1' 
+			AND t6.line_drop_flag = '0'
+			AND t7.pl_isvalid = '1' 
+			<if test="startTime != null">
+				AND t1.warn_time >= #{startTime}
+			</if>
+			<if test="endTime != null">
+				AND t1.warn_time &lt;= #{endTime} 
+			</if>
+			<if test="orgId != null and orgId != ''">
+			   	AND t5.org_uuid = #{orgId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND t6.line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>				
+			<if test="warnTypes != null and warnTypes.size() >0">
+				AND t1.warn_type in 
+				<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+					#{warnType}
+				</foreach>
+			</if>
+			<if test="auditStatus != null and auditStatus.size() > 0">
+				AND t1.audit_status in
+				<foreach collection="auditStatus" item="auditStatu" index="index"  
+		            open="(" close=")" separator=",">  
+		            #{auditStatu}  
+		        </foreach>
+			</if>
+		</where>
+		 ORDER BY t1.warn_time ASC
+	 </select>
+	 
+	<!-- 根据查询条件，按不良驾驶行为类型分类统计 -->
+	<select id="statisticsByWarnType" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnMap">
+		WITH AA AS(
+			SELECT t1.warn_uuid,t1.warn_type,t7.pl_warn_level AS warn_level,t7.pl_display AS warn_label 
+			FROM temp_pl_t_warn t1 
+			LEFT JOIN dw_dim_other_device t2 ON t1.device_id = t2.dev_uuid 
+			LEFT JOIN dw_dim_other_bus_device t3 ON t2.dev_uuid = t3.dev_uuid 
+			LEFT JOIN dw_dim_bus t4 ON t3.bus_uuid = t4.bus_uuid
+			LEFT JOIN dw_dim_bus_line t5 ON t4.bus_line_uuid = t5.line_uuid
+			LEFT JOIN dw_dim_bus_sys_org t6 ON t5.line_org_uuid = t6.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict t7 ON t1.warn_type = t7.pl_value
+        	LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+					<if test="startTime != null">
+						AND create_time >= #{startTime}
+					</if>
+					<if test="endTime != null">
+						AND create_time &lt;= #{endTime} 
+					</if>		        
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)t8 on t8.warn_uuid = t1.warn_uuid 					
+			<where>
+				AND t8.twmc > 0
+			    AND	t4.bus_isvalid = '1' 
+			    AND t4.bus_drop_flag = '0' 
+				AND t5.line_isvalid = '1' 
+				AND t5.line_drop_flag = '0'
+				AND t6.org_enabled = '1' 
+				AND t6.org_drop_flag = '0'
+				AND t7.pl_isvalid='1' 
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND t6.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND t5.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>
+			    <if test="busNumber != null and busNumber != ''">
+			   	 	AND t4.bus_plate_number like '%' || #{busNumber} || '%'
+			    </if>
+			    <if test="busSelfCode != null and busSelfCode != ''">
+			   	 	AND t4.bus_self_code like '%' || #{busSelfCode} || '%'
+			    </if>			    	
+				<if test="startTime != null">
+					AND t1.warn_time >= #{startTime}
+				</if>
+				<if test="endTime != null">
+					AND t1.warn_time &lt;= #{endTime} 
+				</if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND t1.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND t1.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND t1.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>
+			</where>
+			ORDER BY t1.warn_time DESC
+		)
+		SELECT AA.warn_type, AA.warn_label,COUNT(AA.warn_type) AS warn_number 
+		FROM AA 
+		GROUP BY AA.warn_type, AA.warn_label 
+	</select>
+	
+	<!-- 根据查询条件，按不良驾驶行为等级分类统计 -->
+	<select id="statisticsByWarnLeave" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnMap">
+		WITH AA AS(
+			SELECT t1.warn_uuid,t1.warn_type,t7.pl_warn_level AS warn_level, CASE WHEN t7.pl_warn_level = '1' THEN '一级' ELSE '二级' END AS warn_level_label 
+			FROM temp_pl_t_warn t1 
+			LEFT JOIN dw_dim_other_device t2 ON t1.device_id = t2.dev_uuid 
+			LEFT JOIN dw_dim_other_bus_device t3 ON t2.dev_uuid = t3.dev_uuid 
+			LEFT JOIN dw_dim_bus t4 ON t3.bus_uuid = t4.bus_uuid
+			LEFT JOIN dw_dim_bus_line t5 ON t4.bus_line_uuid = t5.line_uuid
+			LEFT JOIN dw_dim_bus_sys_org t6 ON t5.line_org_uuid = t6.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict t7 ON t1.warn_type = t7.pl_value
+        	LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+					<choose>
+						<when test="startTime != null">
+							AND warn_date >= #{startTime}
+					   	 	AND warn_date &lt;= #{endTime} 
+						</when>
+						<otherwise>
+							AND warn_date = CURRENT_DATE
+						</otherwise>
+					</choose>		        
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)t8 on t8.warn_uuid = t1.warn_uuid 				
+			<where>
+				AND t8.twmc > 0  
+				AND	t4.bus_isvalid = '1' 
+				AND t4.bus_drop_flag = '0' 
+				AND t5.line_isvalid = '1' 
+				AND t5.line_drop_flag = '0'
+				AND t6.org_enabled = '1' 
+				AND t6.org_drop_flag = '0'
+				AND t7.pl_isvalid='1' 
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND t6.org_uuid = #{orgId}
+			    </if>
+			    <if test="lineId != null and lineId != ''">
+			   	 	AND t5.line_uuid = #{lineId}
+			    </if>
+			    <if test="busNumber != null and busNumber != ''">
+			   	 	AND t4.bus_plate_number like '%' || #{busNumber} || '%'
+			    </if>	
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND t1.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<choose>
+					<when test="startTime != null">
+						AND t1.warn_date >= #{startTime}
+				   	 	AND t1.warn_date  &lt;= #{endTime} 
+					</when>
+					<otherwise>
+						AND t1.warn_date = CURRENT_DATE
+					</otherwise>
+				</choose>
+			</where>
+			ORDER BY t1.warn_time DESC
+		)
+		SELECT AA.warn_level, AA.warn_level_label,COUNT(AA.warn_level) AS warn_number 
+		FROM AA 
+		GROUP BY AA.warn_level, AA.warn_level_label
+	</select>
+	
+	<!-- 不良驾驶行为当日排行 -->
+	<select id="getBadDrivingBehaviorRanking" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultBadDrivingMap">
+		WITH tt AS(
+			SELECT o.org_name,o.org_uuid,o.org_sort_index,l.line_name,b.bus_plate_number,b.bus_self_code,
+				ww.warn_uuid warnUuid,ww.warn_time as warnTime,ww.driver_name,ww.driver_iccard
+			FROM temp_pl_t_warn ww 
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+        	LEFT JOIN dw_dim_bus_sys_org o on b.bus_org_uuid = o.org_uuid
+        	LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+        	LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+					<if test="startTime != null">
+						AND create_time >= #{startTime}
+					</if>
+					<if test="endTime != null">
+						AND create_time &lt;= #{endTime} 
+					</if>		        
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+			<where>
+				AND tawmc.twmc > 0 
+			 	AND d.dev_isvalid='1' 
+				AND d.dev_drop_flag='0'
+				AND b.bus_isvalid='1' 
+				AND b.bus_drop_flag='0'
+	   			AND sdt.pl_isvalid='1' 
+				AND ww.driver_name is not null
+				<if test="startTime != null">
+					AND ww.warn_time >= #{startTime}
+				</if>
+				<if test="endTime != null">
+					AND ww.warn_time &lt;= #{endTime} 
+				</if>
+				<if test="orgId != null and orgId != '' ">
+					AND o.org_uuid = #{orgId}
+				</if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>				
+			    <if test="busNumber != null and busNumber != ''">
+			   	 	AND b.bus_plate_number like '%' || #{busNumber} || '%'
+			    </if>
+			    <if test="busSelfCode != null and busSelfCode != ''">
+			   	 	AND b.bus_self_code like '%' || #{busSelfCode} || '%'
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>					
+	   		</where>
+		)
+		SELECT tt.org_name,tt.org_uuid,tt.line_name,tt.bus_plate_number,tt.bus_self_code,tt.driver_name,tt.driver_iccard driver_num,count(*) as total_warn 
+		FROM tt 
+		GROUP BY tt.org_name,tt.org_uuid,tt.line_name,tt.bus_plate_number,tt.bus_self_code,tt.driver_name,tt.driver_iccard
+	</select>
+	
+	 <!--不良驾驶行为当日排行详情-->
+	<select id="getBadDrivingBehaviorRankingDetail" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition"  resultType="com.cictec.yyjk.fatigue.model.entity.TWarn">
+		SELECT org.org_name orgName,l.line_name lineName,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,ww.driver_name || ' ' || ww.driver_iccard driverName,ww.driver_iccard driverNum,d.dev_code devCode,
+			ww.warn_uuid warnUuid,sdt.pl_warn_level warnLevel,ww.warn_type warnType,sdt.pl_display warnTypeName,ww.warn_time warnTime,ww.speed,ww.handle_result handleResult,ww.handle_suggestion handleSuggestion,
+		ww.audit_status auditStatus,ww.audit_suggestion auditSuggestion,ww.audit_time auditTime,ww.audit_user auditUser,ww.handle_user handleUser,ww.handle_time handleTime
+		FROM temp_pl_t_warn ww  
+		LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+		LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+		LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+		LEFT JOIN (
+			SELECT
+				COUNT (*) AS twmc,warn_uuid
+			FROM
+				temp_pl_t_warn_media
+	        <where>
+				<if test="startTime != null">
+					AND create_time >= #{startTime}
+				</if>
+				<if test="endTime != null">
+					AND create_time &lt;= #{endTime} 
+				</if>	        
+	        </where>
+			GROUP BY
+				warn_uuid
+			HAVING
+				COUNT (*) > 0
+		)tawmc on tawmc.warn_uuid=ww.warn_uuid 
+		<where>  
+			AND tawmc.twmc > 0
+			AND d.dev_isvalid='1' 
+			AND d.dev_drop_flag='0'
+			AND b.bus_isvalid='1' 
+			AND b.bus_drop_flag='0'
+			AND l.line_isvalid='1'  
+			AND l.line_drop_flag='0'
+			AND sdt.pl_isvalid='1' 
+			<if test="startTime != null">
+				AND ww.warn_time >= #{startTime}
+			</if>
+			<if test="endTime != null">
+				AND ww.warn_time &lt;= #{endTime} 
+			</if>
+			<if test="orgId != null and orgId != '' ">
+				AND org.org_uuid = #{orgId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND l.line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>			
+		    <if test="busNumber != null and busNumber != ''">
+		   	 	AND b.bus_plate_number like '%' || #{busNumber} || '%'
+		    </if>
+		    <if test="busSelfCode != null and busSelfCode != ''">
+		   	 	AND b.bus_self_code like '%' || #{busSelfCode} || '%'
+		    </if>
+			<if test="warnTypes != null and warnTypes.size() >0">
+				AND ww.warn_type in 
+				<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+					#{warnType}
+				</foreach>
+			</if>
+			<if test="handleResults != null and handleResults.size() >0">
+				AND ww.handle_result in 
+				<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+					#{handleResult}
+				</foreach>
+			</if>
+			<if test="auditStatus !=null and auditStatus.size() >0">
+				AND ww.audit_status in 
+				<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+				 	#{auditStatu}
+				</foreach>
+			</if>			
+			<if test="driverName != null and driverName != '' ">
+				AND ww.driver_name = #{driverName}
+			</if>
+			<if test="driverNum != null and driverNum != '' ">
+				AND ww.driver_iccard = #{driverNum}
+			</if>
+		</where>
+		ORDER BY handle_result,ww.warn_time DESC
+	 </select>
+	 
+	 <!-- 不良驾驶行为分析报警司机排行 -->
+	 <select id="getBadDrivingDriverRanking" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="Map">
+		WITH tt AS(
+			SELECT org.org_name,org.org_uuid,org.org_sort_index,l.line_name,l.line_uuid,b.bus_plate_number,ww.driver_name,ww.driver_iccard driver_num,
+						ww.warn_type 
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN (
+					SELECT
+						COUNT (*) AS twmc,warn_uuid
+					FROM
+						temp_pl_t_warn_media
+			        <where>
+					    <if test="startTime != null">
+					   	 	AND create_time >= #{startTime}
+					    </if>	
+					    <if test="endTime != null">
+					   	 	AND create_time &lt;= #{endTime} 
+					    </if>       
+			        </where>
+					GROUP BY
+						warn_uuid
+					HAVING
+						COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>
+		    	AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0'
+				AND sdt.pl_isvalid='1' 				    	
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>
+		    </where>
+			)
+			SELECT tt.org_uuid orguuid,tt.org_name AS orgname,tt.line_uuid lineuuid,tt.line_name AS linename,tt.bus_plate_number as busplatenumber,tt.driver_num AS drivernum,tt.driver_name AS drivername,
+				${sql}
+			 FROM tt 
+			 WHERE tt.driver_name is not null	
+			 GROUP BY tt.org_uuid,tt.org_name,tt.org_sort_index,tt.line_uuid,tt.line_name,tt.bus_plate_number,tt.driver_num,tt.driver_name
+			 ORDER BY tt.org_sort_index,tt.driver_name
+	 </select>
+	 
+	 <!-- 不良驾驶行为分析报警车辆排行 -->
+	 <select id="getBadDrivingBusRanking" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="Map">
+		WITH tt AS(
+			SELECT org.org_name,org.org_uuid,org.org_sort_index,l.line_name,l.line_uuid,ww.driver_name,ww.driver_iccard driver_num,
+						ww.warn_type,b.bus_uuid,b.bus_plate_number 
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN (
+					SELECT
+						COUNT (*) AS twmc,warn_uuid
+					FROM
+						temp_pl_t_warn_media
+			        <where>
+						<if test="startTime != null">
+							AND create_time >= #{startTime}
+						</if>
+						<if test="endTime != null">
+							AND create_time &lt;= #{endTime} 
+						</if>		        
+			        </where>
+					GROUP BY
+						warn_uuid
+					HAVING
+						COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>
+		    	AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+				AND sdt.pl_isvalid='1' 				    	
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>								
+		    </where>
+			)
+			SELECT tt.org_uuid AS orguuid,tt.org_name AS orgname,tt.line_name AS linename,tt.line_uuid lineuuid,tt.bus_uuid AS busuuid,tt.bus_plate_number AS busnumber,
+				${sql}
+			 FROM tt 
+			 WHERE tt.bus_plate_number is not null	
+			 GROUP BY tt.org_uuid,tt.org_name,tt.org_sort_index,tt.line_uuid,tt.line_name,tt.bus_uuid,tt.bus_plate_number
+			 ORDER BY tt.org_sort_index,tt.bus_plate_number
+	 </select>
+	 
+	 <!-- 驾驶员行为监测台账（日报） -->
+	 <select id="getDrivingBehaviorDay" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="Map">
+		WITH tt AS(
+			SELECT org.org_name,org.org_uuid,org.org_sort_index,l.line_name,l.line_uuid,ww.driver_name,ww.driver_iccard driver_num,
+						ww.warn_type,b.bus_uuid,b.bus_plate_number,ww.warn_time,ww.warn_level
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+		    LEFT JOIN (
+					SELECT
+						COUNT (*) AS twmc,warn_uuid
+					FROM
+						temp_pl_t_warn_media
+			        <where>
+					    <if test="startTime != null">
+					   	 	AND create_time >= #{startTime}
+					    </if>	
+					    <if test="endTime != null">
+					   	 	AND create_time &lt;= #{endTime} 
+					    </if>       
+			        </where>
+					GROUP BY
+						warn_uuid
+					HAVING
+						COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>
+		    	AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+				AND sdt.pl_isvalid='1' 			    	
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+			    <if test="busNumber != null and busNumber != ''">
+			   	 	AND b.bus_plate_number like '%' || #{busNumber} || '%' 
+			    </if>
+			    <if test="driverName != null and driverName != ''">
+			   	 	AND ww.driver_name like '%' || #{driverName} || '%' 
+			    </if>
+			    <if test="driverNum != null and driverNum != ''">
+			   	 	AND ww.driver_iccard like '%' || #{driverNum} || '%' 
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>								
+		    </where>
+			)
+			SELECT 
+				to_char(tt.warn_time, 'YYYY-MM-dd HH24:MI:SS') AS warntime,
+				tt.driver_name AS drivername,
+				tt.driver_num AS drivernum,
+				tt.org_name AS orgname,
+				tt.line_name AS linename,
+				tt.bus_uuid AS busuuid,
+				tt.bus_plate_number AS busnumber,
+				${sql}
+			 FROM tt 
+			 <!-- WHERE tt.driver_name is not null -->
+			 ORDER BY tt.warn_time DESC
+	 </select>
+
+	 <!-- 报警上传统计日报表  -->
+	 <select id="getAlarmUploadReportDay" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultType="com.cictec.yyjk.report.model.view.WarnInfoValue">
+			SELECT ww.warn_type "warnType",ww.warn_level "warnLevel",b.bus_uuid "busUuid",b.bus_plate_number "busPlateNumber"
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+		    LEFT JOIN (
+					SELECT
+						COUNT (*) AS twmc,warn_uuid
+					FROM
+						temp_pl_t_warn_media
+		        <where>
+					<if test="startTime != null">
+						AND create_time >= #{startTime}
+					</if>
+					<if test="endTime != null">
+						AND create_time &lt;= #{endTime} 
+					</if>		        
+		        </where>
+					GROUP BY
+						warn_uuid
+					HAVING
+						COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>
+		    	AND sdt.pl_isvalid='1' 
+		    	AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 			    	
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+				<if test="startTime != null">
+					AND ww.warn_time >= #{startTime}
+				</if>
+				<if test="endTime != null">
+					AND ww.warn_time &lt;= #{endTime} 
+				</if>			    
+			    <if test="busNumber != null and busNumber != ''">
+			   	 	AND b.bus_plate_number like '%' || #{busNumber} || '%' 
+			    </if>
+			    <if test="driverName != null and driverName != ''">
+			   	 	AND ww.driver_name like '%' || #{driverName} || '%' 
+			    </if>
+			    <if test="driverNum != null and driverNum != ''">
+			   	 	AND ww.driver_num like '%' || #{driverNum} || '%' 
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>								
+		    </where>
+	 </select>	 
+	 
+	 <!-- 司机报警时间趋势 -->
+	 <select id="getDriverWarnTimeTrend" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnTimeMap">
+		WITH tt AS(
+			SELECT to_char(ww.warn_time,'yyyy-MM-dd') warn_time,org.org_name,org.org_uuid,org.org_sort_index,l.line_name,
+					l.line_uuid,ww.driver_name,ww.driver_num,ww.warn_type
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+			        <if test="startTime != null">
+				   	 	AND warn_date >= #{startTime}
+				    </if>	
+				    <if test="endTime != null">
+				   	 	AND warn_date &lt;= #{endTime} 
+				    </if>
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>	
+	   			AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+		    	AND sdt.pl_isvalid='1' 				
+				AND ww.driver_name is not null
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_date >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_date &lt;= #{endTime} 
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>				
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>				
+			    <if test="driverName != null and driverName != ''">
+			   	 	AND ww.driver_name = #{driverName}
+			    </if>
+			    <if test="driverNum != null and driverNum != ''">
+			   	 	AND ww.driver_num = #{driverNum}
+			    </if>				    				
+		    </where>
+		)
+		SELECT
+			tt.warn_time ,
+			COUNT (*) AS warn_total_num
+		FROM
+			tt
+		GROUP BY
+			tt.warn_time
+		ORDER BY tt.warn_time
+	 </select>
+
+	 <!-- （报警类型分析） 报警时间段分析 -->
+	 <select id="getFatigueDrivingWarnTimeAnalysis" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnTimeMap">
+		WITH tt AS(
+			SELECT EXTRACT(HOUR FROM ww.warn_time) warn_time,org.org_name,org.org_uuid,org.org_sort_index,l.line_name,l.line_uuid,ww.driver_name,ww.driver_num,
+					ww.warn_type
+			FROM temp_pl_t_warn ww 
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+					<if test="startTime != null">
+						AND create_time >= #{startTime}
+					</if>
+					<if test="endTime != null">
+						AND create_time &lt;= #{endTime} 
+					</if>		        
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>
+	   			AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+				AND sdt.pl_isvalid='1' 	
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+				<if test="startTime != null">
+					AND ww.warn_time >= #{startTime}
+				</if>
+				<if test="endTime != null">
+					AND ww.warn_time &lt;= #{endTime} 
+				</if>			    
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>									
+		    </where>
+		)
+		SELECT
+			tt.warn_time,
+			COUNT (*) AS warn_total_num
+		FROM
+			tt
+		<!-- WHERE tt.warn_time >= 6
+			AND tt.warn_time &lt;= 23 -->
+		GROUP BY
+			tt.warn_time
+		ORDER BY tt.warn_time
+	 </select>
+	 
+	 <!-- （报警类型分析）报警时间趋势分析 -->
+	 <select id="getFatigueDrivingWarnTimeTrendAnalysis" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnTimeMap">
+		WITH tt AS(
+			SELECT to_char(ww.warn_time,'yyyy-MM-dd') warn_time,org.org_name,org.org_uuid,org.org_sort_index,l.line_name,l.line_uuid,ww.driver_name,ww.driver_num,
+					ww.warn_type
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+				    <if test="startTime != null">
+				   	 	AND create_time >= #{startTime}
+				    </if>	
+				    <if test="endTime != null">
+				   	 	AND create_time &lt;= #{endTime} 
+				    </if>	        
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>					
+	   			AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+				AND sdt.pl_isvalid='1' 
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+				<if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>								
+		    </where>
+		)
+		SELECT
+			tt.warn_time,
+			COUNT (*) AS warn_total_num
+		FROM
+			tt
+		GROUP BY
+			tt.warn_time
+		ORDER BY tt.warn_time
+	 </select>
+	 
+	 <!--各报警速度占比统计 -->
+	 <select id="getAlarmLevelRatioAnalysis" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnTimeMap">
+		WITH tt AS(
+			SELECT ww.speed,CASE WHEN (ww.speed >= '0' and ww.speed &lt;='20') THEN '0-20(KM/H)'
+			        WHEN (ww.speed > '20' and ww.speed &lt;='30') THEN '21-30(KM/H)'
+					WHEN (ww.speed > '30' and ww.speed &lt;= '40') THEN '31-40(KM/H)'
+					WHEN (ww.speed > '40' and ww.speed &lt;= '50') THEN '41-50(KM/H)'
+					ELSE '51(KM/H)以上' END AS warn_level,org.org_name,org.org_uuid,l.line_name,l.line_uuid,ww.warn_type
+			FROM temp_pl_t_warn ww 
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+				    <if test="startTime != null">
+				   	 	AND create_time >= #{startTime}
+				    </if>	
+				    <if test="endTime != null">
+				   	 	AND create_time &lt;= #{endTime} 
+				    </if>  
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>					
+	   			AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0'
+				AND sdt.pl_isvalid='1'  		   			
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+			    <if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>								
+		    </where>
+		)
+		SELECT
+			tt.warn_level,
+			COUNT (*) AS warn_total_num
+		FROM
+			tt
+		GROUP BY
+			tt.warn_level
+		ORDER BY tt.warn_level
+	 </select>
+	 
+	 <!--报警速度条件下各报警类型占比统计 -->
+	 <select id="getAlarmTypeRatioAnalysis" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnTimeMap">
+		WITH tt AS(
+			SELECT ww.speed,CASE WHEN (ww.speed >= '0' and ww.speed &lt;='20') THEN '0-20(KM/H)'
+			        WHEN (ww.speed > '20' and ww.speed &lt;='30') THEN '21-30(KM/H)'
+					WHEN (ww.speed > '30' and ww.speed &lt;= '40') THEN '31-40(KM/H)'
+					WHEN (ww.speed > '40' and ww.speed &lt;= '50') THEN '41-50(KM/H)'
+					ELSE '51(KM/H)以上' END AS warn_level,org.org_name,org.org_uuid,l.line_name,l.line_uuid,ww.warn_type,sdt.pl_display warn_type_name
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type = sdt.pl_value
+			LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+				    <if test="startTime != null">
+				   	 	AND create_time >= #{startTime}
+				    </if>	
+				    <if test="endTime != null">
+				   	 	AND create_time &lt;= #{endTime} 
+				    </if>
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>					
+	   			AND tawmc.twmc > 0 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+				AND sdt.pl_isvalid = '1'		   			
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+			    <if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>											    
+		    </where>
+		)
+		SELECT
+			tt.warn_type warn_type,tt.warn_type_name ,COUNT (*) AS warn_total_num
+		FROM
+			tt
+		<where>
+			<if test="warnLevel != null and warnLevel != ''">
+				AND tt.warn_level = #{warnLevel} 
+			</if>
+		</where>
+		GROUP BY
+			tt.warn_type,tt.warn_type_name
+		ORDER BY tt.warn_type
+	 </select>
+	 
+	 <!--各速度下报警总数统计   20< speed <= 70 -->
+	 <select id="getAlarmSpeedStatistic" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultWarnTimeMap">
+		WITH tt AS(
+			SELECT ww.speed,org.org_name,org.org_uuid,l.line_name,l.line_uuid,ww.warn_type
+			FROM temp_pl_t_warn ww  
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type = sdt.pl_value
+			LEFT JOIN (
+				SELECT
+					COUNT (*) AS twmc,warn_uuid
+				FROM
+					temp_pl_t_warn_media
+		        <where>
+				    <if test="startTime != null">
+				   	 	AND create_time >= #{startTime}
+				    </if>	
+				    <if test="endTime != null">
+				   	 	AND create_time &lt;= #{endTime} 
+				    </if>      
+		        </where>
+				GROUP BY
+					warn_uuid
+				HAVING
+					COUNT (*) > 0
+			)tawmc on tawmc.warn_uuid = ww.warn_uuid 
+		    <where>					
+	   			AND tawmc.twmc > 0
+	   			AND ww.speed &lt;= '70' 
+	   			AND	b.bus_isvalid = '1' 
+			    AND b.bus_drop_flag = '0' 
+				AND l.line_isvalid = '1' 
+				AND l.line_drop_flag = '0'
+				AND org.org_enabled = '1' 
+				AND org.org_drop_flag = '0' 
+				AND sdt.pl_isvalid='1' 
+			    <if test="orgId != null and orgId != ''">
+			   	 	AND org.org_uuid = #{orgId}
+			    </if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND l.line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>			    
+			    <if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+			    <if test="warnTypes != null and warnTypes.size() >0">
+					AND ww.warn_type in 
+					<foreach collection="warnTypes" item="warnType" open="(" separator="," close=")">
+						#{warnType}
+					</foreach>
+				</if>
+				<if test="handleResults != null and handleResults.size() >0">
+					AND ww.handle_result in 
+					<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+						#{handleResult}
+					</foreach>
+				</if>
+				<if test="auditStatus !=null and auditStatus.size() >0">
+					AND ww.audit_status in 
+					<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+					 	#{auditStatu}
+					</foreach>
+				</if>												    
+		    </where>
+		)
+		SELECT
+			tt.speed warn_speed,
+			COUNT (*) AS warn_total_num
+		FROM
+			tt
+		GROUP BY
+			tt.speed
+		ORDER BY tt.speed :: INTEGER
+	 </select>
+	 
+	 <!--根据角色查询报警信息 -->
+	 <select id="getAlarmSum" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="BaseResultMap">
+		  SELECT
+				ww.*
+			FROM
+				temp_pl_t_warn ww
+			<where>	
+				ww.device_id IN (
+					SELECT
+						dev_uuid
+					FROM
+						dw_dim_other_bus_device
+					WHERE
+						bus_uuid IN (
+							SELECT
+								bus_uuid
+							FROM
+								dw_dim_bus
+							WHERE
+								bus_line_uuid IN (
+									SELECT
+										line_resource_id
+									FROM
+										base_role_lineresource
+									WHERE
+										role_id = #{roleId}
+								)
+						)
+				)
+				<if test="startTime != null">
+			   	 	AND ww.warn_time >= #{startTime}
+			    </if>	
+			    <if test="endTime != null">
+			   	 	AND ww.warn_time &lt;= #{endTime} 
+			    </if>
+			    
+				</where>	
+				
+	 </select>
+</mapper>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.DwDimSysDatadictMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.DwDimSysDatadict">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="type_code" jdbcType="VARCHAR" property="typeCode" />
+    <result column="type_value" jdbcType="VARCHAR" property="typeValue" />
+    <result column="display" jdbcType="VARCHAR" property="display" />
+    <result column="sort" jdbcType="NUMERIC" property="sort" />
+    <result column="isvalid" jdbcType="CHAR" property="isvalid" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  
+  <select id="queryDatadicts" parameterType="java.lang.String" resultMap="BaseResultMap">
+  	SELECT t2.* FROM dw_dim_sys_datadict_type t1 LEFT JOIN dw_dim_sys_datadict t2 ON t1.type_code = t2.type_code
+	<where>
+		<choose>
+			<when test="typeCode != null and typeCode != ''">
+				AND t1.type_code = #{typeCode}
+			</when>
+			<otherwise>
+				AND t1.type_code = 'B005'
+			</otherwise>
+		</choose>
+		AND t1.isvalid = '1'
+		AND t2.isvalid = '1'
+	</where> 
+	
+	
+  </select>
+</mapper>

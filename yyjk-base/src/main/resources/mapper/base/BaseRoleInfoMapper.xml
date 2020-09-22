@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseRoleInfoMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseRoleInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="role_id" jdbcType="VARCHAR" property="roleId" />
+    <result column="role_name" jdbcType="VARCHAR" property="roleName" />
+    <result column="role_parent_id" jdbcType="VARCHAR" property="roleParentId" />
+    <result column="role_sort" jdbcType="SMALLINT" property="roleSort" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="enabled" jdbcType="VARCHAR" property="enabled" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+    <result column="role_type" jdbcType="VARCHAR" property="roleType" />
+    <result column="recheck_type" jdbcType="VARCHAR" property="recheckType" />
+  </resultMap>
+  
+  <resultMap id="BaseResourceResultMap" type="com.cictec.yyjk.base.model.entity.BaseResourceInfo">
+    <id column="resource_id" jdbcType="VARCHAR" property="resourceId" />
+    <result column="resource_name" jdbcType="VARCHAR" property="resourceName" />
+    <result column="resource_parent_id" jdbcType="VARCHAR" property="resourceParentId" />
+    <result column="resource_type" jdbcType="VARCHAR" property="resourceType" />
+    <result column="resource_title" jdbcType="VARCHAR" property="resourceTitle" />
+    <result column="resource_url" jdbcType="VARCHAR" property="resourceUrl" />
+    <result column="resource_sort" jdbcType="SMALLINT" property="resourceSort" />
+    <result column="resource_image" jdbcType="VARCHAR" property="resourceImage" />
+    <result column="resource_component" jdbcType="VARCHAR" property="resourceComponent" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="enabled" jdbcType="VARCHAR" property="enabled" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+  </resultMap>
+  
+  
+  
+  <select id="getRolesByUserId" parameterType="java.lang.String" resultMap="BaseResultMap">
+  	SELECT t1.* FROM base_role_info t1 LEFT JOIN base_user_role t2 ON t2.role_id = t1.role_id 
+	WHERE t2.user_id = #{userId}
+  </select>
+  
+  <select id="getResourseByRoleId" parameterType="java.lang.String" resultMap="BaseResourceResultMap">
+		SELECT t3.* FROM base_role_info t1 
+		LEFT JOIN base_role_resource t2  ON t1.role_id = t2.role_id 
+		LEFT JOIN base_resource_info t3  ON t2.resource_id = t3.resource_id 
+		<where>
+			<if test="roleId != null and roleId != ''">
+				AND t1.role_id = #{roleId}
+			</if>
+			AND t3.resource_id IS NOT NULL
+		</where>
+  </select>
+ 
+   <select id="getDataResourseByRoleId" parameterType="java.lang.String" resultType="com.cictec.yyjk.base.model.entity.BaseDataResourceInfo">
+		SELECT DISTINCT t3.data_resource_id AS "dataResourceId" ,t3.data_resource_name AS "dataResourceName",t3.data_resource_parent_id AS "dataResourceParentId",t3.data_resource_type AS "dataResourceType"
+	 		,t3.data_resource_title AS "dataResourceTitle",t3.data_resource_sort AS "dataResourceSort",t3.data_resource_isvalid AS "dataResourceIsvalid",t3.create_time AS "createTime",t3.describes
+	    FROM base_role_info t1 
+		LEFT JOIN base_role_dataresource t2  ON t1.role_id = t2.role_id 
+		LEFT JOIN base_data_resource_info t3  ON t2.data_resource_id = t3.data_resource_id 
+		<where>
+			<if test="roleId != null and roleId != ''">
+				AND t1.role_id = #{roleId}
+			</if>
+			AND t3.data_resource_id IS NOT NULL
+		</where>
+  </select>
+  
+   <select id="getLineResourseByRoleId" parameterType="java.lang.String" resultType="com.cictec.yyjk.base.model.entity.BusLine">
+		SELECT DISTINCT t3.line_uuid AS lineUuid ,t3.line_name AS lineName,t3.par_line_uuid AS parLineUuid
+	    FROM base_role_info t1 
+		LEFT JOIN base_role_lineresource t2  ON t1.role_id = t2.role_id 
+		LEFT JOIN dw_dim_bus_line t3  ON t2.line_resource_id = t3.line_uuid
+		<where>
+			<if test="roleId != null and roleId != ''">
+				AND t1.role_id = #{roleId}
+			</if>
+			AND t3.line_uuid IS NOT NULL
+		</where>
+  </select>  
+   
+  <delete id="deleteRoleResourses">
+  		DELETE FROM base_role_resource 
+  		<where>
+  			<if test="roleId != null and roleId != ''">
+  				AND role_id = #{roleId}
+  			</if>
+  			<if test="resourceIds != null and resourceIds.length > 0">
+  				AND resource_id in
+  				<foreach collection="resourceIds" item="resourceId" open="(" separator="," close=")">
+  					#{resourceId}
+  				</foreach>
+  			</if>
+  		</where>
+  </delete>
+  
+  <delete id="deleteRoleDataResourses">
+  		DELETE FROM base_role_dataresource 
+  		<where>
+  			<if test="roleId != null and roleId != ''">
+  				AND role_id = #{roleId}
+  			</if>
+  			<if test="resourceIds != null and resourceIds.length > 0">
+  				AND data_resource_id in
+  				<foreach collection="resourceIds" item="resourceId" open="(" separator="," close=")">
+  					#{resourceId}
+  				</foreach>
+  			</if>
+  		</where>
+  </delete>
+</mapper>

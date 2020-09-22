@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisStaOnOffDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisStaOnOffDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="sta_on_off_uuid" jdbcType="VARCHAR" property="staOnOffUuid" />
+    <result column="sta_uuid" jdbcType="VARCHAR" property="staUuid" />
+    <result column="sta_name" jdbcType="VARCHAR" property="staName" />
+    <result column="upload_time_date" jdbcType="DATE" property="uploadTimeDate" />
+    <result column="upload_time_hour" jdbcType="SMALLINT" property="uploadTimeHour" />
+    <result column="pfr_get_on_number" jdbcType="INTEGER" property="pfrGetOnNumber" />
+    <result column="pfr_get_off_number" jdbcType="INTEGER" property="pfrGetOffNumber" />
+  </resultMap>
+  
+  <select id="getAnalysisStaOnOffDayDatas" parameterType="java.lang.String" resultMap="BaseResultMap">
+	SELECT
+		pfr_station_uuid AS sta_uuid,
+		pfr_station_name AS sta_name,
+		LEFT(CAST(pfr_upload_time AS VARCHAR),10) AS upload_time_date,
+		<!-- 取小时 -->
+		EXTRACT (HOUR FROM pfr_upload_time) AS upload_time_hour,
+		SUM (pfr_get_on_number) AS pfr_get_on_number,
+		SUM (pfr_get_off_number) AS pfr_get_off_number
+	FROM
+		mid_passenger_flow_result T 
+ 		<where>
+			<if test="startTime != null">
+                 AND pfr_upload_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                 AND pfr_upload_time &lt;= #{endTime}
+            </if>
+		</where>
+	GROUP BY
+		pfr_station_uuid,
+		pfr_station_name,
+		LEFT(CAST(pfr_upload_time AS VARCHAR),10),
+		<!-- 取小时 -->
+		EXTRACT (HOUR FROM pfr_upload_time)
+  </select>
+  
+</mapper>

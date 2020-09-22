@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimBusLineDeviceIdMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimBusLineDeviceId">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="bld_uuid" jdbcType="VARCHAR" property="bldUuid" />
+    <result column="bld_line_uuid" jdbcType="VARCHAR" property="bldLineUuid" />
+    <result column="bld_line_type" jdbcType="VARCHAR" property="bldLineType" />
+    <result column="bld_device_line_id" jdbcType="INTEGER" property="bldDeviceLineId" />
+    <result column="bld_flag" jdbcType="SMALLINT" property="bldFlag" />
+  </resultMap>
+</mapper>

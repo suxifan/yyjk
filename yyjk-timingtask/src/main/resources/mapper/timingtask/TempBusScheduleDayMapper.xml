@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.TempBusScheduleDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.TempBusScheduleDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="bsd_uuid" jdbcType="VARCHAR" property="bsdUuid" />
+    <result column="bsd_bs_uuid" jdbcType="VARCHAR" property="bsdBsUuid" />
+    <result column="bsd_departure_time" jdbcType="VARCHAR" property="bsdDepartureTime" />
+    <result column="bsd_shift" jdbcType="INTEGER" property="bsdShift" />
+    <result column="bsd_type" jdbcType="VARCHAR" property="bsdType" />
+    <result column="bsd_trip_coefficient" jdbcType="VARCHAR" property="bsdTripCoefficient" />
+    <result column="bsd_plan_mileage" jdbcType="VARCHAR" property="bsdPlanMileage" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE temp_bus_schedule_day
+  </delete>   
+</mapper>

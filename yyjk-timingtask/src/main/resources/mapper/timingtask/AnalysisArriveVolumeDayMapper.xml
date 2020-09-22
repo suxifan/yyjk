@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisArriveVolumeDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisArriveVolumeDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="arrive_uuid" jdbcType="VARCHAR" property="arriveUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="sta_uuid" jdbcType="VARCHAR" property="staUuid" />
+    <result column="sta_seq" jdbcType="VARCHAR" property="staSeq" />
+    <result column="sta_name" jdbcType="VARCHAR" property="staName" />
+    <result column="bus_plate_number" jdbcType="VARCHAR" property="busPlateNumber" />
+    <result column="upload_time_date" jdbcType="VARCHAR" property="uploadTimeDate" />
+    <result column="upload_time_in" jdbcType="TIMESTAMP" property="uploadTimeIn" />
+    <result column="upload_time_out" jdbcType="TIMESTAMP" property="uploadTimeOut" />
+    <result column="upload_time_hour" jdbcType="SMALLINT" property="uploadTimeHour" />
+    <result column="bus_class" jdbcType="SMALLINT" property="busClass" />
+  </resultMap>
+  
+  <select id="getLineIds" parameterType="java.lang.String" resultType="java.lang.String">
+    	SELECT DISTINCT line_uuid FROM analysis_arrive_volume_day WHERE upload_time_date = #{dateTime}
+  </select>
+  
+  <select id="getAnalysisArriveVolumeDatas" resultMap="BaseResultMap">
+		WITH t1 AS(
+			SELECT
+			arrive_uuid,bus_plate_number,to_number(sta_seq,'9999') as sta_seq, COALESCE(upload_time_in,upload_time_out) AS upload_time_in,bus_class
+			FROM
+				analysis_arrive_volume_day
+			<where>
+				<if test="lineId != null and lineId != ''">
+					AND line_uuid = #{lineId}
+				</if>
+				<if test="dateTime != null and dateTime != ''">
+					AND upload_time_date = #{dateTime}
+				</if>
+			</where>
+			ORDER BY line_type,bus_plate_number,upload_time_in,sta_seq
+		)
+		SELECT * FROM t1 WHERE t1.upload_time_in IS NOT NULL
+    </select>
+	
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexLevelEntropyResultMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexLevelEntropyResult">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="level_name" jdbcType="VARCHAR" property="levelName" />
+  </resultMap>
+  <!-- 获取线网评分-线路等级占比-->
+  <select id="getLevelLineCountList" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBuslineVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexLevelEntropyResultVoValue">
+		SELECT
+			t1.level_name levelName,COUNT(t1.line_number) lineCount
+		FROM
+			net_index_level_entropy_result t1
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = t1.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		GROUP BY t1.level_name
+	</select>
+</mapper>

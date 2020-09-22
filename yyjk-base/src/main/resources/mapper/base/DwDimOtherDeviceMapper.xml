@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.DwDimOtherDeviceMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.DwDimOtherDevice">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="dev_uuid" jdbcType="VARCHAR" property="devUuid" />
+    <result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+    <result column="dev_model_num" jdbcType="VARCHAR" property="devModelNum" />
+    <result column="dev_version" jdbcType="VARCHAR" property="devVersion" />
+    <result column="dev_plate_number" jdbcType="VARCHAR" property="devPlateNumber" />
+    <result column="dev_sim_num" jdbcType="VARCHAR" property="devSimNum" />
+    <result column="dev_online_status" jdbcType="VARCHAR" property="devOnlineStatus" />
+    <result column="dev_isvalid" jdbcType="VARCHAR" property="devIsvalid" />
+    <result column="dev_phone" jdbcType="VARCHAR" property="devPhone" />
+    <result column="dev_create_user" jdbcType="VARCHAR" property="devCreateUser" />
+    <result column="dev_create_time" jdbcType="TIMESTAMP" property="devCreateTime" />
+    <result column="dev_update_user" jdbcType="VARCHAR" property="devUpdateUser" />
+    <result column="dev_update_time" jdbcType="TIMESTAMP" property="devUpdateTime" />
+    <result column="dev_drop_flag" jdbcType="VARCHAR" property="devDropFlag" />
+    <result column="dev_remark" jdbcType="VARCHAR" property="devRemark" />
+    <result column="dev_key" jdbcType="VARCHAR" property="devKey" />
+    <result column="dev_online_time" jdbcType="TIMESTAMP" property="devOnlineTime" />
+    <result column="dev_class" jdbcType="VARCHAR" property="devClass" />
+    <result column="dev_arm_version" jdbcType="VARCHAR" property="devArmVersion" />
+    <result column="dev_arm_crc" jdbcType="VARCHAR" property="devArmCrc" />
+    <result column="dev_dsp_version" jdbcType="VARCHAR" property="devDspVersion" />
+    <result column="dev_dsp_crc" jdbcType="VARCHAR" property="devDspCrc" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="dev_bus_plate_number" jdbcType="VARCHAR" property="devBusPlateNumber" />
+    <result column="bus_self_code" jdbcType="VARCHAR" property="busSelfCode" />
+    <result column="dev_class_name" jdbcType="VARCHAR" property="devClassName" />
+  </resultMap>
+  
+  <resultMap type="com.cictec.yyjk.base.model.entity.DwDimOtherDevice" id="devInfoResultMap">
+    <id column="dev_uuid" jdbcType="BIGINT" property="devUuid" />
+   	<result column="dev_class" jdbcType="VARCHAR" property="devClass" />    
+   	<result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+    <result column="dev_class_name" jdbcType="VARCHAR" property="devClassName" />   	
+    <result column="dev_online_status" jdbcType="VARCHAR" property="devOnlineStatus" />   	
+    <result column="dev_online_time" jdbcType="TIMESTAMP" property="devOnlineTime" />     	
+  </resultMap>
+  
+  <!-- 根据车辆id查询该车辆绑定的设备信息 -->
+  <select id="getDeviceInfoByBusUuid" parameterType="java.lang.String" resultMap="devInfoResultMap">
+  		SELECT t1.dev_uuid,t1.dev_class,t1.dev_code,t3.display as dev_class_name,t1.dev_online_time,t1.dev_online_status
+  		FROM dw_dim_other_device t1 
+  		LEFT JOIN dw_dim_other_bus_device t2 ON t1.dev_uuid = t2.dev_uuid 
+  		LEFT JOIN dw_dim_sys_datadict t3 ON t1.dev_class = t3.type_value 
+		WHERE t2.bus_uuid = #{busUuid}
+		AND t3.type_code='B005'
+  </select>
+  
+  <!-- 根据条件获取设备列表信息 -->
+  <select id="getDevices" parameterType="com.cictec.yyjk.base.model.vo.DwDimOtherDeviceVo" resultMap="BaseResultMap">
+  	     SELECT t1.dev_uuid,t1.dev_code,t1.dev_class,t1.dev_model_num,t1.dev_version,t1.dev_isvalid,t1.dev_online_status,t1.dev_phone,t1.dev_update_time,t1.dev_sim_num,
+          t1.dev_dsp_version,t4.org_name,t5.line_name,t3.bus_plate_number dev_bus_plate_number,t3.bus_self_code,t6.display as dev_class_name 
+  	     FROM dw_dim_other_device t1 
+  	     	LEFT JOIN dw_dim_other_bus_device t2 ON t1.dev_uuid = t2.dev_uuid 
+			LEFT JOIN dw_dim_bus t3 ON CAST(t2.bus_uuid AS VARCHAR) = t3.bus_uuid 
+			LEFT JOIN dw_dim_bus_sys_org t4 ON t3.bus_org_uuid = t4.org_uuid 
+			LEFT JOIN dw_dim_bus_line t5 ON t3.bus_line_uuid = t5.line_uuid	
+			LEFT JOIN dw_dim_sys_datadict t6 ON t1.dev_class = t6.type_value
+		<where>
+      		AND t1.dev_drop_flag = '0'
+		    AND t6.type_code = 'B005'
+			<if test="devCode !=null and devCode !=''">
+				AND t1.dev_code like  '%' || #{devCode} || '%'
+			</if>
+			<if test="devClass !=null and devClass !=''">
+				AND t1.dev_class = #{devClass}
+			</if>
+			<if test="devOnlineStatus !=null and devOnlineStatus !=''">
+				AND t1.dev_online_status = #{devOnlineStatus}
+			</if>
+			<if test="devIsvalid !=null and devIsvalid !=''">
+				AND t1.dev_isvalid = #{devIsvalid}
+			</if>
+			<if test="busPlateNumber !=null and busPlateNumber !=''">
+				AND t3.bus_plate_number like  '%' || #{busPlateNumber} || '%'
+			</if>
+			<if test="busSelfCode !=null and busSelfCode !=''">
+				AND t3.bus_self_code like  '%' || #{busSelfCode} || '%'
+			</if>
+		</where>
+		ORDER BY t1.dev_create_time DESC
+  </select>
+  
+  <!--   绑定设备编号，只有编辑时才会需要已存在的设备信息 -->
+  <select id="getNoBindDevCodeList" resultMap="BaseResultMap">
+	<if test="devUuid != null and devUuid != ''">
+	  	SELECT * FROM dw_dim_other_device t1 
+		 	where t1.dev_uuid = #{devUuid}
+		UNION ALL
+	</if>
+  	SELECT t1.* FROM dw_dim_other_device t1 
+  	LEFT JOIN dw_dim_other_bus_device t2 ON t1.dev_uuid = t2.dev_uuid
+  	<where>
+  		AND t2.bus_uuid is null
+	 	<if test="devClass!=null and devClass!=''">
+	 		and t1.dev_class = #{devClass}
+	 	</if>
+	 </where>
+  </select>
+  
+  <select id="getBindDevCodeByDevClass" resultType="java.lang.Integer">
+    	SELECT count(t3.*) AS num 
+	  	FROM dw_dim_other_device t1 LEFT JOIN dw_dim_sys_datadict t2 ON t1.dev_class = t2.type_value
+	  	LEFT JOIN dw_dim_other_bus_device t3 ON t1.dev_uuid = t3.dev_uuid 
+		<where>
+			<if test="typeValue != null and typeValue != ''">
+				AND t1.dev_class = #{typeValue}
+			</if>
+			<choose>
+				<when test="typeCode != null and typeCode !=''">
+					AND t2.type_code = #{typeCode}
+				</when>
+				<otherwise>
+					AND t2.type_code = 'B005'
+				</otherwise>
+			</choose>
+			AND t3.bus_dev_uuid IS NOT NULL
+		</where>
+  </select>
+  
+ <!-- 根据车辆id查询该车辆绑定疲劳minieye设备信息 -->
+  <select id="getDeviceInfoByMinieye" parameterType="java.lang.String" resultMap="devInfoResultMap">
+  		SELECT t1.dev_uuid,t1.dev_class,t1.dev_code,t3.display as dev_class_name
+  		FROM dw_dim_other_device t1 
+  		LEFT JOIN dw_dim_other_bus_device t2 ON t1.dev_uuid = t2.dev_uuid 
+  		LEFT JOIN dw_dim_sys_datadict t3 ON t1.dev_class = t3.type_value 
+		WHERE t2.bus_uuid = #{busUuid}
+		AND t3.type_code='B005' and t1.dev_class = '1'
+  </select> 
+  
+  <!-- 根据设备编号查询设备信息 -->
+  <select id="getDeviceInfoByDevCode" parameterType="java.lang.String" resultMap="devInfoResultMap">
+  		SELECT
+			t1.dev_uuid,t1.dev_class,t1.dev_code,t3.display AS dev_class_name,t1.dev_online_status
+		FROM
+			dw_dim_other_device t1
+		LEFT JOIN dw_dim_sys_datadict t3 ON t1.dev_class = t3.type_value
+		WHERE
+			t1.dev_code = #{devCode}
+		AND t3.type_code = 'B005'
+  </select>
+  
+  
+</mapper>

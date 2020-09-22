@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.TempTPassengerFlowResultMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.TempTPassengerFlowResult">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="pfr_uuid" jdbcType="VARCHAR" property="pfrUuid" />
+    <result column="pfr_line_name" jdbcType="VARCHAR" property="pfrLineName" />
+    <result column="pfr_line_uuid" jdbcType="VARCHAR" property="pfrLineUuid" />
+    <result column="pfr_line_type" jdbcType="VARCHAR" property="pfrLineType" />
+    <result column="pfr_station_seq" jdbcType="VARCHAR" property="pfrStationSeq" />
+    <result column="pfr_line_station_uuid" jdbcType="VARCHAR" property="pfrLineStationUuid" />
+    <result column="pfr_get_on_number" jdbcType="INTEGER" property="pfrGetOnNumber" />
+    <result column="pfr_get_off_number" jdbcType="INTEGER" property="pfrGetOffNumber" />
+    <result column="pfr_upload_time" jdbcType="TIMESTAMP" property="pfrUploadTime" />
+    <result column="prf_dev_code" jdbcType="VARCHAR" property="prfDevCode" />
+    <result column="prf_get_f_on_number" jdbcType="INTEGER" property="prfGetFOnNumber" />
+    <result column="prf_get_f_off_number" jdbcType="INTEGER" property="prfGetFOffNumber" />
+    <result column="prf_get_c_on_number" jdbcType="INTEGER" property="prfGetCOnNumber" />
+    <result column="prf_get_c_off_number" jdbcType="INTEGER" property="prfGetCOffNumber" />
+    <result column="prf_get_e_on_number" jdbcType="INTEGER" property="prfGetEOnNumber" />
+    <result column="prf_get_e_off_number" jdbcType="INTEGER" property="prfGetEOffNumber" />
+    <result column="prf_dev_datastring" jdbcType="VARCHAR" property="prfDevDatastring" />
+    <result column="prf_get_person_count" jdbcType="INTEGER" property="prfGetPersonCount" />
+    <result column="pfr_station_uuid" jdbcType="VARCHAR" property="pfrStationUuid" />
+    <result column="pfr_trip_time" jdbcType="VARCHAR" property="pfrTripTime" />
+    <result column="pfr_trip_date" jdbcType="TIMESTAMP" property="pfrTripDate" />
+    <result column="pfr_open_door_time" jdbcType="VARCHAR" property="pfrOpenDoorTime" />
+    <result column="pfr_close_door_time" jdbcType="VARCHAR" property="pfrCloseDoorTime" />
+    <result column="prf_dev_uuid" jdbcType="VARCHAR" property="prfDevUuid" />
+    <result column="pfr_current_long" jdbcType="VARCHAR" property="pfrCurrentLong" />
+    <result column="pfr_current_lat" jdbcType="VARCHAR" property="pfrCurrentLat" />
+    <result column="pfr_before_long" jdbcType="VARCHAR" property="pfrBeforeLong" />
+    <result column="pfr_before_lat" jdbcType="VARCHAR" property="pfrBeforeLat" />
+    <result column="pfr_normal" jdbcType="INTEGER" property="pfrNormal" />
+  </resultMap>
+  
+  
+  
+<!-- 单车客流上下车人数  当天-->
+  <select id="getAllByCondition" parameterType="com.cictec.yyjk.timingtask.model.vo.TempTPassengerFlowResultVo" resultMap="BaseResultMap">
+  	select * from temp_t_passenger_flow_result
+		<where>
+	                pfr_line_uuid = #{pfrLineUuid} 
+	            AND prf_dev_code = #{prfDevCode} 
+	            AND pfr_upload_time >= #{startTime}
+	            AND pfr_upload_time &lt;= #{endTime}
+	           <!--   to_date(to_char(pfr_upload_time,'yyyy-MM-dd'),'yyyy-MM-dd') = CURRENT_DATE -->
+        </where>       
+  </select>  
+  
+   <!--获取当天客流表中所有线路UUIDS-->
+  <select id="getLineIds" resultType="java.lang.String">
+     SELECT DISTINCT pfr_line_uuid  FROM temp_t_passenger_flow_result
+  </select>
+  
+  <!-- 获取线路客流数据 -->
+  <select id="getKlDataByLineUuid" resultMap="BaseResultMap">
+		 SELECT
+		  *
+		 FROM
+		  temp_t_passenger_flow_result
+		 WHERE
+		  pfr_line_uuid = #{lineUuid}
+		 AND to_char(pfr_upload_time,'yyyy-MM-dd') =  to_char(CURRENT_DATE -1,'yyyy-MM-dd')
+		 ORDER BY
+		  pfr_line_type,
+		  pfr_trip_time,
+		  pfr_station_seq :: INTEGER  
+  </select>  
+  
+  <select id="getLineStaSeqs" resultType="java.lang.String">
+	 SELECT
+	  ls_sequence
+	 FROM
+	  dw_dim_line_station
+	 <where>
+	  <if test="lineUuid != null and lineUuid != ''">
+	   AND ls_line_uuid = #{lineUuid}
+	  </if>
+	  <if test="lineType != null and lineType != ''">
+	   AND ls_line_type = #{lineType}
+	  </if> 
+	 </where>
+	 ORDER BY
+	  ls_sequence  
+  </select>  
+  
+   <!-- 修改为无效趟次 -->
+  <update id="updateQuality" >
+	 update
+	 
+	  temp_t_passenger_flow_result
+	 SET
+	  pfr_quality = '1'
+	 WHERE 
+	  pfr_uuid = #{uuid}
+  </update>
+  
+</mapper>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimDeviceMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimDevice">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="dev_uuid" jdbcType="VARCHAR" property="devUuid" />
+    <result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+    <result column="dev_version" jdbcType="VARCHAR" property="devVersion" />
+    <result column="dev_sim_num" jdbcType="VARCHAR" property="devSimNum" />
+    <result column="dev_isvalid" jdbcType="CHAR" property="devIsvalid" />
+    <result column="dev_create_time" jdbcType="TIMESTAMP" property="devCreateTime" />
+    <result column="dev_drop_flag" jdbcType="CHAR" property="devDropFlag" />
+    <result column="dev_key" jdbcType="VARCHAR" property="devKey" />
+    <result column="dev_type" jdbcType="VARCHAR" property="devType" />
+    <result column="dev_ref_id" jdbcType="VARCHAR" property="devRefId" /> 
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_device
+  </delete>  
+</mapper>

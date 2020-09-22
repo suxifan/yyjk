@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TWarnMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TWarn">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="warn_uuid" jdbcType="VARCHAR" property="warnUuid" />
+    <result column="device_id" jdbcType="VARCHAR" property="deviceId" />
+    <result column="device_code" jdbcType="VARCHAR" property="deviceCode" />
+    <result column="warn_type" jdbcType="VARCHAR" property="warnType" />
+    <result column="warn_time" jdbcType="TIMESTAMP" property="warnTime" />
+    <result column="warn_id" jdbcType="VARCHAR" property="warnId" />
+    <result column="warn_content" jdbcType="VARCHAR" property="warnContent" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="hex_location_buf" jdbcType="VARCHAR" property="hexLocationBuf" />
+    <result column="lat" jdbcType="VARCHAR" property="lat" />
+    <result column="lng" jdbcType="VARCHAR" property="lng" />
+    <result column="speed" jdbcType="VARCHAR" property="speed" />
+    <result column="warn_source" jdbcType="VARCHAR" property="warnSource" />
+    <result column="driver_name" jdbcType="VARCHAR" property="driverName" />
+    <result column="driver_num" jdbcType="VARCHAR" property="driverNum" />
+    <result column="warn_display" jdbcType="VARCHAR" property="warnTypeName" />
+    <result column="warn_level" jdbcType="VARCHAR" property="warnLevel" />    
+    <result column="warn_date" jdbcType="VARCHAR" property="warnDate" />
+    <result column="warn_end_time" jdbcType="TIMESTAMP" property="warnEndTime" />
+    <result column="warn_end_lat" jdbcType="VARCHAR" property="warnEndLat" />    
+    <result column="warn_end_lng" jdbcType="VARCHAR" property="warnEndLng" /> 
+    <result column="audit_status" jdbcType="VARCHAR" property="auditStatus" />    
+    <result column="audit_suggestion" jdbcType="VARCHAR" property="auditSuggestion" />
+    <result column="audit_time" jdbcType="TIMESTAMP" property="auditTime" /> 
+    <result column="audit_user" jdbcType="VARCHAR" property="auditUser" /> 
+    <result column="handle_user" jdbcType="VARCHAR" property="handleUser" />
+    <result column="handle_result" jdbcType="VARCHAR" property="handleResult" />
+    <result column="handle_suggestion" jdbcType="VARCHAR" property="handleSuggestion" />
+    <result column="handle_time" jdbcType="TIMESTAMP" property="handleTime" /> 
+    <result column="cc" jdbcType="VARCHAR" property="cc" />
+    <result column="cc_time" jdbcType="TIMESTAMP" property="ccTime" /> 
+    <result column="warn_number" jdbcType="VARCHAR" property="warnNumber" />
+    <result column="device_warn_number" jdbcType="VARCHAR" property="deviceWarnNumber" />
+    <result column="driver_iccard" jdbcType="VARCHAR" property="driverIccard" />
+  </resultMap>
+  
+  <!-- 更新报警审核 -->
+  <select id="updateWarnCc" parameterType="com.cictec.yyjk.fatigue.model.entity.TWarn" >
+      UPDATE temp_pl_t_warn SET 
+      <if test="cc != null">
+         cc = #{cc}
+      </if>
+         ,cc_time = #{ccTime}
+      WHERE warn_uuid = #{warnUuid}
+  </select>
+  
+  <!-- 报警列表 -->
+  <select id="selectWarnInfo" parameterType="com.cictec.yyjk.fatigue.model.vo.TWarnVo" resultType="com.cictec.yyjk.fatigue.model.entity.TWarn">
+	WITH T1 AS (
+		SELECT
+			COUNT (*) AS twmc,warn_uuid
+		FROM
+			temp_pl_t_warn_media
+		<where>
+			<if test="startTime != null">
+				AND create_time >= #{startTime}
+			</if>
+			<if test="endTime != null">
+				AND create_time &lt;= #{endTime}
+			</if>						
+		</where>
+		GROUP BY warn_uuid HAVING COUNT (*) > 0
+	)
+	SELECT org.org_name orgName,l.line_name lineName,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,d.dev_code devCode,
+		ww.warn_uuid warnUuid,ww.driver_name || ' ' || ww.driver_iccard driverName,ww.warn_level warnLevel,ww.warn_type warnType,sdt.pl_display warnTypeName,ww.warn_time warnTime,ww.speed,ww.handle_result handleResult,ww.handle_suggestion handleSuggestion,
+		ww.audit_status auditStatus,ww.audit_suggestion auditSuggestion,ww.audit_time auditTime,ww.audit_user auditUser,ww.handle_user handleUser,ww.handle_time handleTime,ww.lat,ww.lng,<!-- ww.cc cc,ww.cc_time ccTime, -->
+		dd.dev_ref_id as devRefId,d.dev_uuid as devUuid,b.bus_uuid as busUuid,b.bus_dev_uuid as busDevUuid,
+		<!-- ww.warn_number warnNumber,ww.device_warn_number deviceWarnNumber -->
+		ww.warn_number warnNumber,ww.device_warn_number deviceWarnNumber
+		<!-- (CASE WHEN 
+				(SELECT COUNT(1) FROM temp_pl_t_warn 
+				LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+				where warn_time &lt;= ww.warn_time AND tawmc.twmc > 0 AND warn_date = ww.warn_date 
+				AND device_id = ww.device_id 
+				AND ((CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END)  = 
+					(CASE WHEN ww.warn_type = 'YAWN' THEN 'FATIGUE' WHEN  ww.warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE ww.warn_type END) AND
+					(CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END) = 'FATIGUE')) > 0 
+			THEN 
+				(SELECT COUNT(1) FROM temp_pl_t_warn 
+				LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+				where warn_time &lt;= ww.warn_time AND tawmc.twmc > 0 AND warn_date = ww.warn_date AND device_id = ww.device_id 
+				AND ((CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END)  = 
+					(CASE WHEN ww.warn_type = 'YAWN' THEN 'FATIGUE' WHEN  ww.warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE ww.warn_type END) AND
+					(CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END) = 'FATIGUE')) 
+			ELSE
+				(SELECT COUNT(1) FROM temp_pl_t_warn 
+				LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+				where tawmc.twmc > 0 AND warn_time &lt;= ww.warn_time AND warn_date = ww.warn_date AND device_id = ww.device_id AND warn_type = ww.warn_type)
+			END ) warnNumber,
+			(SELECT COUNT(1) FROM temp_pl_t_warn LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+			where tawmc.twmc > 0 AND warn_time &lt;= ww.warn_time AND warn_date = ww.warn_date AND device_id = ww.device_id) deviceWarnNumber -->
+	FROM temp_pl_t_warn ww 
+		LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+		LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+		LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+		LEFT JOIN dw_dim_device  dd on dd.dev_uuid=b.bus_dev_uuid
+		LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid 
+		<where>
+			AND d.dev_isvalid='1' 
+			AND d.dev_drop_flag='0'
+			AND b.bus_isvalid='1' 
+			AND b.bus_drop_flag='0'
+			AND l.line_isvalid='1'  
+			AND l.line_drop_flag='0'
+			AND sdt.pl_isvalid='1'
+			AND tawmc.twmc > 0 
+			<!-- 增加报警类型每天每台设备连续报疲劳报警4次都不显示      (弃用)
+			AND ((ww.warn_type IN ('YAWN','CLOSEEYE','FATIGUE') AND CAST(ww.warn_number AS INTEGER) >=5) OR ww.warn_type NOT IN('YAWN','CLOSEEYE','FATIGUE'))
+			-->
+			<if test="orgId != null and orgId != '' ">
+				AND l.line_org_uuid=#{orgId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND l.line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>			
+			<if test="busPlateNumber != null and busPlateNumber != '' ">
+				AND b.bus_plate_number=#{busPlateNumber}
+			</if> 
+			<if test="busUuid != null and busUuid != '' "> 
+				AND b.bus_uuid=#{busUuid}
+			</if> 
+			<if test="devCode != null and devCode != '' ">
+				AND d.dev_code like '%' ||  #{devCode} || '%'
+			</if> 
+			<if test="busSelfCode != null and busSelfCode != '' ">
+				AND b.bus_self_code like '%' ||  #{busSelfCode} || '%'
+			</if>
+			<if test="warnLevel != null and warnLevel != '' ">
+				AND ww.warn_level = #{warnLevel}
+			</if>
+			<if test="handleResults != null and handleResults.size() >0">
+				AND ww.handle_result in 
+				<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+					#{handleResult}
+				</foreach>
+			</if>	
+			<if test="warnTypeId != null and warnTypeId.length > 0">
+				AND ww.warn_type in
+				<foreach collection="warnTypeId" item="warnTypeId" index="index"  
+		            open="(" close=")" separator=",">  
+		            #{warnTypeId}  
+		        </foreach>
+			</if>			
+			<if test="startTime != null">
+				AND ww.warn_time >= #{startTime}
+			</if>
+			<if test="endTime != null">
+				AND ww.warn_time &lt;= #{endTime}
+			</if>
+			<if test="auditStatus != null and auditStatus.size() > 0">
+				AND ww.audit_status in
+				<foreach collection="auditStatus" item="auditStatu" index="index"  
+		            open="(" close=")" separator=",">  
+		            #{auditStatu}  
+		        </foreach>
+			</if>
+			<if test="driverName != null and driverName != '' ">
+				AND ww.driver_name = #{driverName}
+			</if>			
+			<if test="drvEmployeeId != null and drvEmployeeId != '' ">
+				AND ww.driver_iccard = #{drvEmployeeId}
+			</if>			
+			<if test="warnUuid != null and warnUuid != '' ">
+				AND ww.warn_uuid = #{warnUuid}
+			</if>			
+		</where> 				
+		ORDER BY ww.audit_status :: INTEGER,ww.warn_time DESC
+  </select>
+  
+  <!-- 根据报警uuid获取报警时间-->
+  <select id="getWarnTimeByUuid" parameterType="java.lang.String" resultType="java.util.Date" >
+      SELECT 
+      	warn_time warnTime 
+      FROM
+      	temp_pl_t_warn 
+      WHERE 
+      	warn_uuid = #{warnUuid}
+  </select>
+  
+  <!-- 详情 -->
+  <select id="warnInfoDetailGet" parameterType="com.cictec.yyjk.fatigue.model.vo.TWarnVo" resultType="com.cictec.yyjk.fatigue.model.entity.TWarn">
+  		<!-- WITH TT AS(
+			SELECT * FROM (SELECT
+				array_to_string(group_concat(t1.warn_uuid),',') warnUuids,
+				array_to_string(group_concat(t1.warn_time),',') warnTimes,
+				t1.warn_date,
+				t1.device_id,
+				(CASE WHEN t1.warn_type = 'YAWN' THEN 'FATIGUE' WHEN  t1.warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE t1.warn_type END)
+			FROM
+				(SELECT 
+					* 
+				FROM 
+					temp_pl_t_warn t1
+				WHERE
+					t1.warn_type IN ('YAWN','CLOSEEYE','FATIGUE')
+					<if test="warnTime != null "><![CDATA[ AND t1.warn_time <= #{warnTime} ]]></if>
+				ORDER BY t1.warn_time ASC 
+				) t1
+			GROUP BY
+				t1.warn_date,
+				t1.device_id,
+				(CASE WHEN t1.warn_type = 'YAWN' THEN 'FATIGUE' WHEN  t1.warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE t1.warn_type END)) tt
+			<where>
+				<if test="warnUuid != null and warnUuid != '' ">
+				 	AND position(#{warnUuid} in tt.warnUuids)> 0
+				</if>
+			</where>
+		) -->
+		WITH T1 AS (
+			SELECT
+				COUNT (*) AS twmc,warn_uuid
+			FROM
+				temp_pl_t_warn_media
+			<where>
+				<if test="warnUuid != null and warnUuid != '' ">
+					AND warn_uuid= #{warnUuid}  
+				</if>
+			</where>
+			GROUP BY warn_uuid HAVING COUNT (*) > 0
+		)
+		SELECT <!-- t1.warnUuids,t1.warnTimes, -->org.org_name orgName,l.line_name lineName,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,d.dev_code devCode,
+			ww.warn_uuid warnUuid,ww.warn_level warnLevel,ww.warn_type warnType,sdt.pl_display warnTypeName,ww.warn_time warnTime,
+			ww.driver_name || ' ' || ww.driver_iccard driverName,dd.dev_ref_id as devRefId,
+			ww.speed,ww.lat,ww.lng,ww.warn_time warnStartTime,ww.warn_end_time warnEndTime,
+			<!-- ww.warn_number warnNumber,ww.device_warn_number deviceWarnNumber,ww.handle_result handleResult, -->
+			ww.warn_number warnNumber,ww.device_warn_number deviceWarnNumber,ww.handle_result handleResult,
+			ww.handle_suggestion handleSuggestion,
+			ww.audit_status auditStatus,ww.audit_suggestion auditSuggestion,ww.handle_user handleUser,ww.handle_time handleTime
+			<!-- ,(CASE WHEN 
+				(SELECT COUNT(1) FROM temp_pl_t_warn 
+				LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+				where warn_time &lt;= ww.warn_time AND tawmc.twmc > 0 AND warn_date = ww.warn_date 
+				AND device_id = ww.device_id 
+				AND ((CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END)  = 
+					(CASE WHEN ww.warn_type = 'YAWN' THEN 'FATIGUE' WHEN  ww.warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE ww.warn_type END) AND
+					(CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END) = 'FATIGUE')) > 0 
+			THEN 
+				(SELECT COUNT(1) FROM temp_pl_t_warn 
+				LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+				where warn_time &lt;= ww.warn_time AND tawmc.twmc > 0 AND warn_date = ww.warn_date AND device_id = ww.device_id 
+				AND ((CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END)  = 
+					(CASE WHEN ww.warn_type = 'YAWN' THEN 'FATIGUE' WHEN  ww.warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE ww.warn_type END) AND
+					(CASE WHEN warn_type = 'YAWN' THEN 'FATIGUE' WHEN  warn_type =  'CLOSEEYE' THEN 'FATIGUE' ELSE warn_type END) = 'FATIGUE')) 
+			ELSE
+				(SELECT COUNT(1) FROM temp_pl_t_warn 
+				LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+				where tawmc.twmc > 0 AND warn_time &lt;= ww.warn_time AND warn_date = ww.warn_date AND device_id = ww.device_id AND warn_type = ww.warn_type)
+			END ) warnNumber,
+			(SELECT COUNT(1) FROM temp_pl_t_warn LEFT JOIN T1 tawmc on tawmc.warn_uuid=ww.warn_uuid
+			where tawmc.twmc > 0 AND warn_time &lt;= ww.warn_time AND warn_date = ww.warn_date AND device_id = ww.device_id) deviceWarnNumber -->
+		FROM temp_pl_t_warn ww
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			LEFT JOIN dw_dim_device  dd on dd.dev_uuid=b.bus_dev_uuid
+			<!-- LEFT JOIN TT t1 ON position(ww.warn_uuid in t1.warnUuids)> 0 -->
+		<where>
+			<if test="warnUuid != null and warnUuid != '' ">
+				AND ww.warn_uuid= #{warnUuid}  
+			</if>
+			AND d.dev_isvalid='1' 
+			AND d.dev_drop_flag='0'
+			AND b.bus_isvalid='1' 
+			AND b.bus_drop_flag='0'
+			AND l.line_isvalid='1'  
+			AND l.line_drop_flag='0'
+			AND sdt.pl_isvalid='1'
+		</where>
+  </select>
+
+  <select id="getDevCodeByBusPlateNumber" parameterType="java.lang.String" resultType="java.lang.String">
+  	SELECT t3.dev_code FROM dw_dim_bus t1 LEFT JOIN dw_dim_other_bus_device t2 ON t1.bus_uuid = t2.bus_uuid
+ 	LEFT JOIN  dw_dim_other_device t3 ON t2.dev_uuid = t3.dev_uuid WHERE t3.dev_class = '1' and t1.bus_plate_number = #{busPlateNumber}
+  </select>
+  
+  <!-- 报警级别占比 -->
+  <select id="getWarnLevelPie" parameterType="com.cictec.yyjk.fatigue.model.vo.TWarnVo" resultType="com.cictec.yyjk.fatigue.model.vo.TWarnsAnalysisDto">
+	SELECT count(t.warn_uuid) warnNum ,t.pl_warn_level warnLevel
+	FROM 
+		(SELECT ww.warn_uuid,ww.warn_type,sdt.pl_warn_level
+			FROM temp_pl_t_warn ww 
+				LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+		  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+		  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+		  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+				LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+				LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+			WHERE d.dev_isvalid='1' and d.dev_drop_flag='0'
+				AND b.bus_isvalid='1' and b.bus_drop_flag='0'
+				AND l.line_isvalid='1'  and l.line_drop_flag='0'
+				AND sdt.pl_isvalid='1' 
+			<if test="orgId != null and orgId != '' "><![CDATA[ and l.line_org_uuid=#{orgId}]]></if>
+			<if test="lineId != null and lineId != '' "><![CDATA[ AND l.line_uuid=#{lineId} ]]></if> 
+			<if test="busPlateNumber != null and busPlateNumber != '' "><![CDATA[ AND b.bus_plate_number=#{busPlateNumber} ]]></if> 
+			<if test="busUuid != null and busUuid != '' "><![CDATA[ AND b.bus_uuid=#{busUuid} ]]></if> 
+			<if test="busSelfCode != null and busSelfCode != '' "><![CDATA[ AND b.bus_self_code=#{busSelfCode} ]]></if>			
+			<if test="startTime != null"><![CDATA[ AND ww.warn_time >= #{startTime} ]]></if>
+			<if test="endTime != null"><![CDATA[ AND ww.warn_time <= #{endTime} ]]></if>				
+		) t
+	GROUP BY t.pl_warn_level  
+	ORDER BY t.pl_warn_level DESC	
+  </select>
+  
+  <!-- 查询各车辆的报警级别数量 -->
+  <select id="getWarnLevelNumToBus" parameterType="com.cictec.yyjk.fatigue.model.vo.TWarnVo" resultType="com.cictec.yyjk.fatigue.model.vo.TWarnsAnalysisDto">
+	WITH TT AS(	
+		SELECT b.bus_uuid busUuid ,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,
+			COALESCE(t4.warnLevel1Num,'0') warnLevel1Num, COALESCE(t4.warnLevel2Num,'0') warnLevel2Num, COALESCE(t4.warnLevel3Num,'0') warnLevel3Num,
+			(COALESCE(t4.warnLevel1Num,'0') + COALESCE(t4.warnLevel2Num,'0') + COALESCE(t4.warnLevel3Num,'0'))AS totalWarnLevelNum
+		FROM dw_dim_bus b
+		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+		LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+		LEFT JOIN (
+			SELECT t3.bus_uuid,
+				MAX(CASE warnLevel WHEN'1'THEN warnNum ELSE 0 END) warnLevel1Num,
+				MAX(CASE warnLevel WHEN'2'THEN warnNum ELSE 0 END) warnLevel2Num,
+				MAX(CASE warnLevel WHEN'3'THEN warnNum ELSE 0 END) warnLevel3Num
+			FROM (
+				SELECT t2.bus_uuid,count(t2.bus_uuid) warnNum,t2.pl_warn_level warnLevel 
+				FROM
+				(SELECT td.bus_uuid,ww.warn_type,sdt.pl_warn_level 
+				 FROM temp_pl_t_warn ww
+					LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+					LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+					LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+				WHERE d.dev_isvalid='1' 
+				AND d.dev_drop_flag='0' 
+				AND sdt.pl_isvalid='1'
+				<if test="startTime != null"><![CDATA[ AND ww.warn_time >= #{startTime} ]]></if>
+				<if test="endTime != null"><![CDATA[ AND ww.warn_time <= #{endTime} ]]></if>			
+				) t2
+				GROUP BY t2.bus_uuid,t2.pl_warn_level
+			) t3  GROUP BY t3.bus_uuid  
+		) 
+		t4 ON b.bus_uuid = t4.bus_uuid
+		WHERE b.bus_isvalid='1' and b.bus_drop_flag='0'
+		AND l.line_isvalid='1'  and l.line_drop_flag='0'
+		<if test="orgId != null and orgId != '' "><![CDATA[ and l.line_org_uuid=#{orgId}]]></if>
+		<if test="lineId != null and lineId != '' "><![CDATA[ AND l.line_uuid=#{lineId} ]]></if> 
+		<if test="busPlateNumber != null and busPlateNumber != '' "><![CDATA[ AND b.bus_plate_number=#{busPlateNumber} ]]></if> 
+		<if test="busUuid != null and busUuid != '' "><![CDATA[ AND b.bus_uuid=#{busUuid} ]]></if> 
+		<if test="busSelfCode != null and busSelfCode != '' "><![CDATA[ AND b.bus_self_code=#{busSelfCode} ]]></if>	
+	)
+	SELECT * FROM TT 
+	WHERE tt.totalWarnLevelNum > 0
+	ORDER BY tt.totalWarnLevelNum DESC  
+  </select>
+  
+  <!--查询报警类型数量  -->
+  <select id="getWarnTypeNum" parameterType="com.cictec.yyjk.fatigue.model.vo.TWarnVo" resultType="com.cictec.yyjk.fatigue.model.vo.TWarnsAnalysisDto">
+	select sdt.pl_uuid warnUuid,sdt.pl_display warnTypeName,<![CDATA[COALESCE(t1."count", '0') "count" ]]> from dw_dim_pl_sys_datadict sdt
+	LEFT JOIN (
+		select t.warn_type,count(t.warn_uuid)<![CDATA[ count]]> from (
+			select ww.warn_uuid,ww.warn_type
+			from temp_pl_t_warn ww 
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	  		LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+			LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+			where d.dev_isvalid='1' and d.dev_drop_flag='0'
+			and b.bus_isvalid='1' and b.bus_drop_flag='0'
+			and l.line_isvalid='1'  and l.line_drop_flag='0'
+			<if test="orgId != null and orgId != '' "><![CDATA[ and l.line_org_uuid=#{orgId}]]></if>
+			<if test="lineId != null and lineId != '' "><![CDATA[ AND l.line_uuid=#{lineId} ]]></if> 
+			<if test="busPlateNumber != null and busPlateNumber != '' "><![CDATA[ AND b.bus_plate_number=#{busPlateNumber} ]]></if> 
+			<if test="busUuid != null and busUuid != '' "><![CDATA[ AND b.bus_uuid=#{busUuid} ]]></if> 
+			<if test="busSelfCode != null and busSelfCode != '' "><![CDATA[ AND b.bus_self_code=#{busSelfCode} ]]></if>				
+			<if test="startTime != null"><![CDATA[ AND ww.warn_time >= #{startTime} ]]></if>
+			<if test="endTime != null"><![CDATA[ AND ww.warn_time <= #{endTime} ]]></if>				
+		) t GROUP BY warn_type
+	) t1 on  t1.warn_type = sdt.pl_value
+	where sdt.pl_isvalid='1' 
+	<![CDATA[ ORDER BY "count" desc   ]]> 
+  </select>
+  
+  <!-- 报警次数趋势环比 -->
+  <select id="getWarnNumByDate" parameterType="com.cictec.yyjk.fatigue.model.vo.TWarnVo" resultType="com.cictec.yyjk.fatigue.model.vo.TWarnsAnalysisDto">
+  <![CDATA[ SELECT d.day_date xdate,COALESCE(m1.count, '0') "count",COALESCE(m2.count, '0') contrastCount  ]]> 
+			FROM
+			(select  date(zz) as day_date from   
+			generate_series(date_trunc('day',to_date(#{startTime},'yyyy-MM-dd')),  
+			date_trunc('day',to_date(#{endTime},'yyyy-MM-dd')),'1 day') as tt(zz)  ) d
+			LEFT JOIN
+			(
+				select "count"(m.warn_uuid) count, m.warn_time from (
+					select ww.warn_uuid,ww.warn_type,to_char(ww.warn_time,'yyyy-MM-dd') warn_time
+					from temp_pl_t_warn ww 
+					LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+					LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+					LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+					LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+					LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+					LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+					where d.dev_isvalid='1' and d.dev_drop_flag='0'
+					and b.bus_isvalid='1' and b.bus_drop_flag='0'
+					and l.line_isvalid='1'  and l.line_drop_flag='0'
+					and sdt.pl_isvalid='1' 
+					<if test="orgId != null and orgId != '' "><![CDATA[ and l.line_org_uuid=#{orgId}]]></if>
+					<if test="lineId != null and lineId != '' "><![CDATA[ AND l.line_uuid=#{lineId} ]]></if> 
+					<if test="busPlateNumber != null and busPlateNumber != '' "><![CDATA[ AND b.bus_plate_number=#{busPlateNumber} ]]></if> 
+					<if test="busUuid != null and busUuid != '' "><![CDATA[ AND b.bus_uuid=#{busUuid} ]]></if> 
+					<if test="busSelfCode != null and busSelfCode != '' "><![CDATA[ AND b.bus_self_code=#{busSelfCode} ]]></if>				
+					<if test="startTime != null"><![CDATA[ AND ww.warn_time >= #{startTime} ]]></if>
+					<if test="endTime != null"><![CDATA[ AND ww.warn_time <= #{endTime} ]]></if>
+					<if test="warnUuid != null and warnUuid != ''"><![CDATA[ AND sdt.pl_uuid = #{warnUuid} ]]></if>	
+				) m GROUP BY m.warn_time
+			) m1 on to_date(m1.warn_time,'yyyy-MM-dd') = d.day_date
+			LEFT JOIN
+			(
+				select "count"(m.warn_uuid) count, m.warn_time from (
+					select ww.warn_uuid,ww.warn_type,to_char(ww.warn_time,'yyyy-MM-dd') warn_time
+					from temp_pl_t_warn ww 
+					LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+					LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+					LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+					LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+					LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+					LEFT JOIN dw_dim_pl_sys_datadict sdt on ww.warn_type=sdt.pl_value
+					where d.dev_isvalid='1' and d.dev_drop_flag='0'
+					and b.bus_isvalid='1' and b.bus_drop_flag='0'
+					and l.line_isvalid='1'  and l.line_drop_flag='0'
+					and sdt.pl_isvalid='1'
+					<if test="orgId != null and orgId != '' "><![CDATA[ and l.line_org_uuid=#{orgId}]]></if>
+					<if test="lineId != null and lineId != '' "><![CDATA[ AND l.line_uuid=#{lineId} ]]></if> 
+					<if test="busPlateNumber != null and busPlateNumber != '' "><![CDATA[ AND b.bus_plate_number=#{busPlateNumber} ]]></if> 
+					<if test="busUuid != null and busUuid != '' "><![CDATA[ AND b.bus_uuid=#{busUuid} ]]></if> 
+					<if test="busSelfCode != null and busSelfCode != '' "><![CDATA[ AND b.bus_self_code=#{busSelfCode} ]]></if>				
+					<if test="startTime != null"><![CDATA[ AND ww.warn_time >= #{contrastStartTime} ]]></if>
+					<if test="endTime != null"><![CDATA[ AND ww.warn_time <= #{contrastEndTime} ]]></if>
+					<if test="warnUuid != null and warnUuid != ''"><![CDATA[ AND sdt.pl_uuid = #{warnUuid} ]]></if>	
+				) m GROUP BY m.warn_time
+			) m2 on to_date(m2.warn_time,'yyyy-MM-dd') + interval '${dateDiff} Days' = d.day_date  
+  </select>  
+  
+  <select id="getWarnInfoBy" resultMap="BaseResultMap" >
+		SELECT
+				t3.pl_display AS warn_display,
+				t1.warn_uuid,t1.device_id,t1.device_code,t1.warn_type,t1.warn_time,t1.warn_id,t1.warn_content,t1.create_time,t1.hex_location_buf,t1.lat,t1.lng,
+				t1.speed,t1.warn_source,t1.driver_name,t1.driver_iccard driver_num,t1.handle_result,t1.warn_date,t1.warn_level,t1.warn_end_time,t1.warn_end_lng,
+				t1.warn_end_lat,t1.handle_suggestion,t1.audit_status,t1.audit_time,t1.audit_suggestion,t1.cc,t1.cc_time,t1.handle_user,t1.audit_user,t1.handle_time,
+				t1.warn_number,t1.device_warn_number,t1.line_uuid,t1.line_name
+		FROM
+			temp_pl_t_warn t1 LEFT JOIN temp_pl_t_warn_media t2 ON t1.warn_uuid = t2.warn_uuid
+		LEFT JOIN dw_dim_pl_sys_datadict t3 ON t1.warn_type = t3.pl_value
+		WHERE
+			t1.device_code = #{deviceCode}
+			AND to_char(t1.warn_time,'yyyy-MM-dd') = to_char(CURRENT_DATE, 'yyyy-MM-dd')
+			AND t2.media_type = '2'
+			<if test="handleResults !=null and handleResults.size() >0">
+				AND t1.handle_result in 
+				<foreach collection="handleResults" item="handleResult" open="(" separator="," close=")">
+				 	#{handleResult}
+				</foreach>
+			</if>
+			<if test="auditStatus !=null and auditStatus.size() >0">
+				AND t1.audit_status in 
+				<foreach collection="auditStatus" item="auditStatu" open="(" separator="," close=")">
+				 	#{auditStatu}
+				</foreach>
+			</if>
+			AND t2.warn_uuid IS NOT NULL
+		ORDER BY
+			t1.warn_time DESC
+		LIMIT  #{total} 
+  </select>
+  
+  <!-- 获取前10分钟没有司机的报警信息，根据车辆的实时位置信息补全报警的司机信息 -->
+  <select id="getWarnInfo" resultType="com.cictec.yyjk.fatigue.model.entity.TWarn">
+		SELECT b.bus_plate_number busPlateNumber,
+			ww.warn_uuid warnUuid,ww.warn_time as warnTime
+		FROM temp_pl_t_warn ww 
+			LEFT JOIN dw_dim_other_device d on ww.device_id=d.dev_uuid
+	  		LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+	  		LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+		WHERE d.dev_isvalid='1' 
+			AND d.dev_drop_flag='0'
+			AND b.bus_isvalid='1' 
+			AND b.bus_drop_flag='0'
+		 	AND ww.warn_time >= now() + interval '-30 minute'
+     		AND ww.driver_name  IS NULL
+  </select>
+  
+  <!--设备抓拍详情 -->
+  	<select id="getWarnFigndetail" resultType="com.cictec.yyjk.fatigue.model.entity.TWarn">	
+			
+			(SELECT
+				tm.media_url AS mediaUrl,
+				tw.device_code AS devCode,
+				tw.warn_time as warnTime,
+				tw.warn_type AS warnType 
+				FROM
+					temp_pl_t_warn tw
+				LEFT JOIN temp_pl_t_warn_media tm ON tw.warn_uuid = tm.warn_uuid
+				WHERE 1=1
+				AND tw.warn_type IN('ADASSNAP')
+				<if test="devCode!='' and devCode !=null" >
+				and device_code=#{devCode}
+				</if>
+				<if test="warnTime !=null" >
+				and tw.warn_time &gt;= #{warnTime}
+				</if>
+				ORDER BY tw.warn_time LIMIT 3)
+				UNION 
+				(SELECT
+				tm.media_url AS mediaUrl,
+				tw.device_code AS devCode,
+				tw.warn_time as warnTime,
+				tw.warn_type AS warnType 
+				FROM
+					temp_pl_t_warn tw
+				LEFT JOIN temp_pl_t_warn_media tm ON tw.warn_uuid = tm.warn_uuid
+				WHERE 1=1
+				AND tw.warn_type IN('DMSTOSNAP')
+				<if test="devCode!='' and devCode !=null" >
+				and device_code=#{devCode}
+				</if>
+				<if test="warnTime !=null" >
+				and tw.warn_time &gt;#{warnTime}
+				</if>
+				ORDER BY tw.warn_time LIMIT 3)
+				
+  	</select>
+  	
+  	
+  <select id="selectDevstatus"  parameterType="Map" resultType="Map">
+	  		SELECT
+		DISTINCT(b.bus_uuid) as busUuid,d.dev_online_status as devStatus,d.dev_code as devCode,d.dev_uuid as devUuid,dd.dev_ref_id as devRefId
+		FROM
+			dw_dim_other_device d
+		 LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+		LEFT JOIN dw_dim_bus b ON b.bus_uuid = td.bus_uuid
+		LEFT JOIN dw_dim_device dd on  dd.dev_uuid=b.bus_dev_uuid
+  </select>
+  
+  
+  <!-- 当日累计客流 -->
+	<select id="getTotalPerson" parameterType="Map" resultType="java.lang.Integer">
+		SELECT SUM(pfr_get_on_number) AS total_personflow 
+		FROM temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+		<where>
+			<if test="samplingTime != null and samplingTime !=''">
+				AND to_char(pfr_upload_time,'yyyy-MM-dd HH24:mi:ss') &lt;= #{samplingTime}
+			</if>
+			<if test="busNumber != null and busNumber != ''">
+				AND t2.dev_bus_plate_number = #{busNumber}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 当前趟次累计客流 -->
+	<select id="getCurrentPerson" parameterType="Map" resultType="java.lang.Integer">
+		SELECT SUM(pfr_get_on_number) AS total_personflow 
+		FROM temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+		<where>
+			<if test="samplingTime != null and samplingTime !=''">
+				AND to_char(pfr_upload_time,'yyyy-MM-dd HH24:mi:ss') &lt;= #{samplingTime}
+			</if>
+			<if test="busNumber != null and busNumber != ''">
+				AND t2.dev_bus_plate_number = #{busNumber}
+			</if>
+			<if test="currenttrip != null and currenttrip != ''">
+				AND t1.pfr_trip_time = #{currenttrip}
+			</if>
+		</where>
+	</select>
+</mapper>

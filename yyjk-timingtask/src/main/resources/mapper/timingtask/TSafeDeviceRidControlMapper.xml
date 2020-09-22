@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.TSafeDeviceRidControlMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.TSafeDeviceRidControl">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="bus_uuid" jdbcType="VARCHAR" property="busUuid" />
+    <result column="bus_self_code" jdbcType="VARCHAR" property="busSelfCode" />
+    <result column="bus_number" jdbcType="VARCHAR" property="busNumber" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="bus_online_time" jdbcType="TIMESTAMP" property="busOnlineTime" />
+    <result column="bus_update_time" jdbcType="TIMESTAMP" property="busUpdateTime" />
+    <result column="bus_state" jdbcType="VARCHAR" property="busState" />
+    <result column="warn_time" jdbcType="TIMESTAMP" property="warnTime" />
+    <result column="current_state" jdbcType="VARCHAR" property="currentState" />
+    <result column="dev_uuid" jdbcType="VARCHAR" property="devUuid" />
+    <result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+    <result column="dev_model" jdbcType="VARCHAR" property="devModel" />
+    <result column="dev_online_time" jdbcType="TIMESTAMP" property="devOnlineTime" />
+    <result column="dev_update_time" jdbcType="TIMESTAMP" property="devUpdateTime" />
+    <result column="dev_state" jdbcType="VARCHAR" property="devState" />
+  </resultMap>
+  
+  <update id="updateBusState">
+  		UPDATE t_safe_device_rid_control SET bus_state = '0',current_state = null
+  </update>
+  
+  <!-- 根据车辆uuid获取车辆机构信息-->
+  <select id="getBusDetailByBusUuid" parameterType="java.lang.String" resultMap="BaseResultMap">
+       SELECT
+			t1.bus_org_uuid org_uuid,t2.org_name,t3.line_uuid,t3.line_name
+		FROM
+			dw_dim_bus t1 
+		LEFT JOIN dw_dim_bus_sys_org t2 ON t1.bus_org_uuid = t2.org_uuid
+		LEFT JOIN dw_dim_bus_line t3 ON t1.bus_line_uuid = t3.line_uuid
+		WHERE
+			t1.bus_uuid =  #{busUuid}
+  </select>
+  
+  <!-- 设备脱管列表 -->
+  <select id="getDeviceRidControlData" parameterType="com.cictec.yyjk.timingtask.model.vo.TSafeDeviceRidControlVo" resultType="com.cictec.yyjk.timingtask.model.viewdata.TSafeDeviceRidControlValue">
+       SELECT
+			t1.org_uuid orgUuid,t1.org_name orgName,t1.line_uuid lineUuid,t1.line_name lineName,t1.bus_uuid busUuid,t1.bus_self_code busSelfCode,
+			t1.bus_number busNumber,t1.bus_update_time busUpdateTime,t1.bus_state busState,
+			t1.warn_time warnTime,round(cast((EXTRACT(epoch FROM (SELECT (NOW() - t1.warn_time)))/60)as numeric)) warnTimes,
+			t1.current_state currentState,t1.dev_uuid devUuid,t1.dev_code devCode,t1.dev_model devModel,t1.dev_online_time devOnlineTime,t1.dev_state devState
+		FROM
+			t_safe_device_rid_control t1
+		LEFT JOIN dw_dim_other_device t2 ON t2.dev_uuid = t1.dev_uuid
+		<where>
+			t2.dev_isvalid = '1' AND t2.dev_drop_flag = '0' AND t1.bus_state = '1' AND t1.current_state = '0'
+			<if test="orgUuid != null and orgUuid != ''">
+				AND t1.org_uuid = #{orgUuid}
+			</if>
+			<if test="lineUuid != null and lineUuid != ''">
+				AND t1.line_uuid = #{lineUuid}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+	        	AND t1.line_uuid in 
+		        <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+		        	#{lineUuid}
+				</foreach>
+	        </if>
+	        <if test="devModel != null and devModel != ''">
+				AND t1.dev_model = #{devModel}
+			</if>
+			<if test="busUuid != null and busUuid != ''">
+				AND t1.bus_uuid = #{busUuid}
+			</if>
+			<if test="busSelfCode != null and busSelfCode != ''">
+				AND t1.bus_self_code = #{busSelfCode}
+			</if>
+			<if test="busNumber != null and busNumber != ''">
+				AND t1.bus_number = #{busNumber}
+			</if>
+			<if test="busUuids != null and busUuids.size() >0">
+	        	AND t1.bus_uuid in 
+		        <foreach collection="busUuids" item="busUuid" open="(" separator="," close=")">
+		        	#{busUuid}
+				</foreach>
+	        </if>             
+			<if test="devCode != null and devCode != ''">
+				AND t1.dev_code = #{devCode}
+			</if>
+	      </where>
+	      ORDER BY t1.warn_time ASC 
+</select>
+  
+</mapper>

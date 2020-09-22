@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisCapacityVolumeDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisCapacityVolumeDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="capacity_uuid" jdbcType="VARCHAR" property="capacityUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="upload_time_date" jdbcType="DATE" property="uploadTimeDate" />
+    <result column="upload_time_quarter" jdbcType="VARCHAR" property="uploadTimeQuarter" />
+    <result column="pfr_get_on_number" jdbcType="INTEGER" property="pfrGetOnNumber" />
+    <result column="pfr_get_off_number" jdbcType="INTEGER" property="pfrGetOffNumber" />
+    <result column="prf_get_person_count" jdbcType="INTEGER" property="prfGetPersonCount" />
+    <result column="bus_load_number" jdbcType="INTEGER" property="busLoadNumber" />
+  </resultMap>
+  
+  <select id="getAnalysisCapacityVolumeDayDatas" resultMap="BaseResultMap">
+		WITH aa AS (
+			SELECT
+				org_uuid,
+				org_name,
+				pfr_line_uuid,
+				pfr_line_name,
+				pfr_line_type,
+				LEFT(CAST(pfr_upload_time AS VARCHAR),10) AS pfr_trip_date,
+				prf_dev_code,
+				CASE
+				WHEN substr(to_char(t1.pfr_upload_time,'yyyy-MM-dd HH:mi'),15,16) :: INTEGER &lt; 15 THEN
+					to_char(t1.pfr_upload_time, 'HH24') || ':00:00'
+				WHEN substr(to_char(t1.pfr_upload_time,'yyyy-MM-dd HH:mi'),15,16) :: INTEGER &lt; 30 THEN
+					to_char(t1.pfr_upload_time, 'HH24') || ':15:00'
+				WHEN substr(to_char(t1.pfr_upload_time,'yyyy-MM-dd HH:mi'),15,16) :: INTEGER &lt; 45 THEN
+					to_char(t1.pfr_upload_time, 'HH24') || ':30:00'
+				ELSE
+					to_char(t1.pfr_upload_time, 'HH24') || ':45:00'
+				END AS time_interval,
+				SUM (pfr_get_on_number) AS pfr_get_on_number,
+				SUM (pfr_get_off_number) AS pfr_get_off_number,
+				AVG (prf_get_person_count) AS prf_get_person_count,
+				AVG (COALESCE (bus_load_number, 56)) AS bus_load_number
+			FROM
+				mid_passenger_flow_result t1
+				<where>
+					<if test="startTime != null">
+                        AND pfr_upload_time >= #{startTime}
+                    </if>
+	                <if test="endTime != null">
+                        AND pfr_upload_time &lt;= #{endTime}
+                    </if>
+				</where>
+			GROUP BY
+				org_uuid,
+				org_name,
+				pfr_line_uuid,
+				pfr_line_name,
+				pfr_line_type,
+				LEFT(CAST(pfr_upload_time AS VARCHAR),10),
+				prf_dev_code,
+				CASE
+				WHEN substr(to_char(t1.pfr_upload_time,'yyyy-MM-dd HH:mi'),15,16) :: INTEGER &lt; 15 THEN
+					to_char(t1.pfr_upload_time, 'HH24') || ':00:00'
+				WHEN substr(to_char(t1.pfr_upload_time,'yyyy-MM-dd HH:mi'),15,16) :: INTEGER &lt; 30 THEN
+					to_char(t1.pfr_upload_time, 'HH24') || ':15:00'
+				WHEN substr(to_char(t1.pfr_upload_time,'yyyy-MM-dd HH:mi'),15,16) :: INTEGER &lt; 45 THEN
+					to_char(t1.pfr_upload_time, 'HH24') || ':30:00'
+				ELSE
+					to_char(t1.pfr_upload_time, 'HH24') || ':45:00'
+				END
+		) 
+		SELECT
+			org_uuid,
+			org_name,
+			pfr_line_uuid AS line_uuid,
+			pfr_line_name AS line_name,
+			pfr_line_type AS line_type,
+			pfr_trip_date AS upload_time_date,
+			time_interval AS upload_time_quarter,
+			SUM (pfr_get_on_number) AS pfr_get_on_number,
+			SUM (pfr_get_off_number) AS pfr_get_off_number,
+			round(SUM(prf_get_person_count)) AS prf_get_person_count,
+			SUM (COALESCE (bus_load_number, 56)) AS bus_load_number
+		FROM
+			aa
+		GROUP BY
+			org_uuid,
+			org_name,
+			pfr_line_uuid,
+			pfr_line_name,
+			pfr_line_type,
+			pfr_trip_date,
+			time_interval
+  </select>
+</mapper>

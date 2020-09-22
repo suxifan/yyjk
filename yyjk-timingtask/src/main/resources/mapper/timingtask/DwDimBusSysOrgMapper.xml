@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimBusSysOrgMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimBusSysOrg">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="org_type" jdbcType="INTEGER" property="orgType" />
+    <result column="org_parent_uuid" jdbcType="VARCHAR" property="orgParentUuid" />
+    <result column="org_enabled" jdbcType="CHAR" property="orgEnabled" />
+    <result column="org_sort_index" jdbcType="INTEGER" property="orgSortIndex" />
+    <result column="org_create_time" jdbcType="TIMESTAMP" property="orgCreateTime" />
+    <result column="org_short_name" jdbcType="VARCHAR" property="orgShortName" />
+    <result column="org_drop_flag" jdbcType="CHAR" property="orgDropFlag" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_bus_sys_org
+  </delete>
+</mapper>

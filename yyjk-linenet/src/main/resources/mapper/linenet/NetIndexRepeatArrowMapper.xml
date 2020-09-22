@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexRepeatArrowMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatArrow">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="sc_count" jdbcType="INTEGER" property="scCount" />
+    <result column="repeat_sc_count" jdbcType="INTEGER" property="repeatScCount" />
+    <result column="repeatability" jdbcType="REAL" property="repeatability" />
+    <result column="top3" jdbcType="VARCHAR" property="top3" />
+  </resultMap>
+  
+  
+	<!-- 获取分公司线路重复度指标列表-->
+	<select id="getCompanyLineRepeatList" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatArrow">
+		SELECT
+			ndb.company,nira.line_number lineNumber,ndb.line_uuid lineUuid,
+			(CASE WHEN nira.arrow = '1' THEN '上行' WHEN nira.arrow = '2' THEN '下行' ELSE '' END) arrow,
+			nira.line_name lineName,
+			nira.sc_count scCount,
+			nira.repeat_sc_count repeatScCount,
+			nira.repeatability,
+			nira.top3
+		FROM
+			net_index_repeat_arrow nira
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = nira.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		ORDER BY ndb.company
+	</select>
+	
+	<!-- 获取数据总览页线路重复度TOP10-->
+	<select id="getLineRepeatTOP10List" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatArrow">
+		<!-- SELECT
+			t1.line_number lineNumber,t1.repeatability
+		FROM
+			(
+				SELECT
+					nira.line_number,
+					round(CAST (SUM (nira.repeatability) AS NUMERIC) / CAST (2 AS NUMERIC),4) repeatability
+				FROM
+					net_index_repeat_arrow nira
+				GROUP BY
+					nira.line_number
+			) t1 
+		 ORDER BY
+		 	t1.repeatability ASC
+		 LIMIT 10 -->
+		 SELECT
+			t1.line_number lineNumber,
+			t1.repeatability
+		FROM
+			(
+				SELECT
+					line_number,
+					repeatability
+				FROM
+					net_index_repeat_linenum
+				ORDER BY
+					repeatability DESC
+				LIMIT 10
+			) t1
+		ORDER BY
+			t1.repeatability ASC
+	</select>
+</mapper>

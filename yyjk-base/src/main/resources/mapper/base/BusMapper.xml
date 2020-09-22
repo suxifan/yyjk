@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BusMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.Bus">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="bus_uuid" jdbcType="VARCHAR" property="busUuid" />
+    <result column="bus_dev_uuid" jdbcType="VARCHAR" property="busDevUuid" />
+    <result column="bus_plate_number" jdbcType="VARCHAR" property="busPlateNumber" />
+    <result column="bus_self_code" jdbcType="VARCHAR" property="busSelfCode" />
+    <result column="bus_fuel_type" jdbcType="VARCHAR" property="busFuelType" />
+    <result column="bus_isvalid" jdbcType="CHAR" property="busIsvalid" />
+    <result column="bus_org_uuid" jdbcType="VARCHAR" property="busOrgUuid" />
+    <result column="bus_line_uuid" jdbcType="VARCHAR" property="busLineUuid" />
+    <result column="bus_load_number" jdbcType="INTEGER" property="busLoadNumber" />
+    <result column="bus_create_time" jdbcType="TIMESTAMP" property="busCreateTime" />
+    <result column="bus_drop_flag" jdbcType="CHAR" property="busDropFlag" />
+    <result column="dev_num" jdbcType="INTEGER" property="devNum"/>
+    <result column="line_name" jdbcType="VARCHAR" property="lineName"/>
+    <result column="org_name" jdbcType="VARCHAR" property="orgName"/>   
+  </resultMap>
+  
+  <select id="getBuses" parameterType="com.cictec.yyjk.base.model.vo.BusVo" resultMap="BaseResultMap">
+	   WITH aa AS(
+			SELECT bus_uuid,count(*) dev_num 
+			FROM dw_dim_other_bus_device 
+			GROUP BY bus_uuid 
+	   )
+		SELECT aa.dev_num,t1.*,t2.line_name,t3.org_name
+		FROM dw_dim_bus t1 
+		LEFT JOIN dw_dim_bus_line t2 ON t1.bus_line_uuid = t2.line_uuid 
+		LEFT JOIN dw_dim_bus_sys_org t3 ON t1.bus_org_uuid = t3.org_uuid 
+		LEFT JOIN aa ON t1.bus_uuid = aa.bus_uuid
+		<where>
+			t1.bus_isvalid = '1'
+			AND t1.bus_drop_flag = '0'
+			AND t3.org_drop_flag = '0'
+			AND t3.org_enabled = '1'
+			AND t2.line_drop_flag = '0'
+			AND t2.line_isvalid = '1'
+			AND t2.line_name NOT LIKE '%机动%'
+			<if test="orgId != null and orgId !=''">
+				AND t1.bus_org_uuid = #{orgId}
+			</if>
+			<if test="lineId != null and lineId !=''">
+				AND t1.bus_line_uuid = #{lineId}
+			</if>
+			<if test="busPlateNumber != null and busPlateNumber !=''">
+				AND t1.bus_uuid = #{busPlateNumber}
+			</if>
+			<if test="busSelfCode != null and busSelfCode !=''">
+				AND t1.bus_self_code  like '%' || #{busSelfCode} || '%'
+			</if>
+			<if test="carNo != null and carNo.size() >0">
+				AND t1.bus_self_code in 
+				<foreach collection="carNo" item="carNum" open="(" separator="," close=")">
+					#{carNum}
+				</foreach>
+			</if>
+			<if test="carList != null and carList.size() >0">
+				AND t1.bus_plate_number in 
+				<foreach collection="carList" item="busPlateNumber" open="(" separator="," close=")">
+					#{busPlateNumber}
+				</foreach>
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND t1.bus_line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>					
+		</where>
+		ORDER BY bus_create_time DESC
+  </select>
+  
+  <select id="getTotalBus" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT count(bus_plate_number) AS totalbusnum 
+		FROM dw_dim_bus t1 
+			LEFT JOIN dw_dim_bus_sys_org t2 ON t1.bus_org_uuid = t2.org_uuid 
+			LEFT JOIN dw_dim_bus_line t3 ON t1.bus_line_uuid = t3.line_uuid
+		<where>
+			<if test="orgId != null and orgId !=''">
+				AND t1.bus_org_uuid = #{orgId}
+			</if>
+			AND t1.bus_isvalid = '1'
+			AND t1.bus_drop_flag = '0'
+			AND t2.org_drop_flag = '0'
+			AND t2.org_enabled = '1'
+			AND t3.line_drop_flag = '0'
+			AND t3.line_isvalid = '1'
+			AND t3.line_name NOT LIKE '%机动%'
+		</where>
+  </select>
+  
+  <select id="getBusInfo" parameterType="java.lang.String" resultMap="BaseResultMap">
+		SELECT * 
+		FROM dw_dim_bus 
+		WHERE bus_plate_number = #{busPlateNumber}
+  </select>
+  
+  <select id="getBusDevRefId" parameterType="java.lang.String" resultType="java.lang.String">
+	  SELECT t2.dev_ref_id FROM dw_dim_bus t1 LEFT JOIN dw_dim_device t2 ON t1.bus_dev_uuid = t2.dev_uuid
+	WHERE t1.bus_uuid = #{busUuid}
+  </select>
+  
+  <select id="getBusInfoByVo" parameterType="com.cictec.yyjk.base.model.vo.BusDeviceVo" resultType="Map">
+	  SELECT t1.bus_uuid AS "busUuid",t1.bus_plate_number AS "busPlateNumber",t1.bus_self_code AS "busSelfCode",t2.line_name AS "lineName",t3.org_name AS "orgName"
+	  FROM dw_dim_bus t1 LEFT JOIN dw_dim_bus_line t2  ON t1.bus_line_uuid = t2.line_uuid 
+	  	LEFT JOIN dw_dim_bus_sys_org t3 ON t1.bus_org_uuid = t3.org_uuid 
+	  WHERE t2.line_name = #{lineName} 
+		AND t3.org_name =  #{orgName} 
+		AND t1.bus_plate_number = #{busPlateNumber}  
+		AND t1.bus_self_code =  #{busSelfCode} 
+  </select>  
+  
+	<!-- 获取车辆机构信息 -->
+  <select id="getBusOrgInfo" resultType="Map">
+		SELECT bus_uuid busuuid,org_name orgname from dw_dim_bus t1 LEFT JOIN dw_dim_bus_sys_org t2 ON t1.bus_org_uuid = t2.org_uuid WHERE t1.bus_isvalid = '1' 
+  </select>
+  
+  <!-- 获取绑定minieye设备的车辆信息 -->
+  <select id="getMinieyeBus" parameterType="com.cictec.yyjk.base.model.vo.BusVo" resultType="com.cictec.yyjk.base.model.entity.Bus">
+  	SELECT b.bus_uuid busUuid,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,
+  	d.dev_uuid devUuid,d.dev_code devCode from dw_dim_bus b
+	LEFT JOIN dw_dim_other_bus_device bd on bd.bus_uuid = b.bus_uuid
+	LEFT JOIN dw_dim_other_device d on d.dev_uuid = bd.dev_uuid
+	where d.dev_drop_flag = '0' and d.dev_isvalid = '1' and d.dev_class = '1'
+	<if test="lineIdsStr != null and lineIdsStr != ''">
+		and b.bus_line_uuid in (${lineIdsStr})
+	</if>
+	ORDER BY b.bus_plate_number DESC
+  </select>
+  
+  <select id="getBusByLineIds" resultType="com.cictec.yyjk.base.model.entity.Bus">
+	SELECT
+		t2.org_name as orgName,t3.line_name as lineName,t1.bus_plate_number as busPlateNumber,t1.bus_self_code as busSelfCode
+	FROM
+		dw_dim_bus t1
+	LEFT JOIN dw_dim_bus_sys_org t2 ON t1.bus_org_uuid = t2.org_uuid
+	LEFT JOIN dw_dim_bus_line t3 ON t1.bus_line_uuid = t3.line_uuid  
+	<where>
+		<if test="lineUuids != null and lineUuids.size() >0">
+			AND t3.line_uuid in 
+			<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+				#{lineUuid}
+			</foreach>
+		</if>
+		AND t1.bus_isvalid = '1'
+		AND t1.bus_drop_flag = '0'
+		AND t2.org_drop_flag = '0'
+		AND t2.org_enabled = '1'
+		AND t3.line_drop_flag = '0'
+		AND t3.line_isvalid = '1'
+	</where>
+  </select>
+  
+  	<select id="selectvoiceprompt" parameterType="Map" resultType="Map">
+  		SELECT 
+  			t1.bus_uuid,dv.send_time,dv.voiceprompt_content,1 as sendStatus
+		FROM dw_dim_bus t1 
+			LEFT JOIN dw_dim_bus_sys_org t2 ON t1.bus_org_uuid = t2.org_uuid 
+			LEFT JOIN dw_dim_bus_line t3 ON t1.bus_line_uuid = t3.line_uuid
+			LEFT JOIN dw_voiceprompt dv ON t1.bus_uuid = dv.bus_uuid
+		where
+			t1.bus_isvalid = '1'
+			AND t1.bus_drop_flag = '0'
+			AND t2.org_drop_flag = '0'
+			AND t2.org_enabled = '1'
+			AND t3.line_drop_flag = '0'
+			AND t3.line_isvalid = '1'
+			AND t3.line_name NOT LIKE '%机动%'
+  	</select>
+
+  <!-- 获取车辆自编号信息 -->
+  <select id="getCarNoList" parameterType="com.cictec.yyjk.base.model.vo.BusVo" resultType="com.cictec.yyjk.base.model.entity.Bus">
+  	SELECT
+		t1.bus_org_uuid orgId,t2.org_name as orgName,t3.line_name as lineName,t1.bus_plate_number as busPlateNumber,t1.bus_self_code as busSelfCode
+	FROM
+		dw_dim_bus t1
+	LEFT JOIN dw_dim_bus_sys_org t2 ON t1.bus_org_uuid = t2.org_uuid
+	LEFT JOIN dw_dim_bus_line t3 ON t1.bus_line_uuid = t3.line_uuid  
+	<where>
+		AND t1.bus_isvalid = '1'
+		AND t1.bus_drop_flag = '0'
+		AND t2.org_drop_flag = '0'
+		AND t2.org_enabled = '1'
+		AND t3.line_drop_flag = '0'
+		AND t3.line_isvalid = '1'
+		<if test="orgId != null and orgId !=''">
+			AND t1.bus_org_uuid = #{orgId}
+		</if>
+		<if test="orgName != null and orgName !=''">
+			AND t2.org_name = #{orgName}
+		</if>
+		<if test="lineId != null and lineId !=''">
+			AND t3.line_uuid = #{lineId}
+		</if>
+		<if test="lineUuids != null and lineUuids.size() >0">
+			AND t3.line_uuid in 
+			<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+				#{lineUuid}
+			</foreach>
+		</if>
+	</where>
+  </select>
+  
+</mapper>

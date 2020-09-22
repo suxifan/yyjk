@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisLengthTimeMonthMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisLengthTimeMonth">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="length_uuid" jdbcType="VARCHAR" property="lengthUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="sta_uuid" jdbcType="VARCHAR" property="staUuid" />
+    <result column="sta_seq" jdbcType="VARCHAR" property="staSeq" />
+    <result column="sta_name" jdbcType="VARCHAR" property="staName" />
+    <result column="upload_time_month" jdbcType="VARCHAR" property="uploadTimeMonth" />
+    <result column="upload_time_hour" jdbcType="INTEGER" property="uploadTimeHour" />
+    <result column="sta_length_time" jdbcType="NUMERIC" property="staLengthTime" />
+  </resultMap>
+  
+  <select id="getAnalysisLengthTimeMonthDatas" parameterType="java.lang.String" resultMap="BaseResultMap">
+		WITH aa AS(
+				SELECT 
+					org_uuid,
+					org_name,
+					line_uuid,
+					line_name,
+					line_type,
+					sta_uuid,
+					sta_seq,
+					sta_name,
+					LEFT(upload_time_day,7) AS upload_time_month,
+					upload_time_hour,
+					sta_length_time
+				FROM
+					analysis_length_time_day 
+				<where>
+					<if test="month != null and month != ''">
+						AND LEFT(upload_time_day,7) = #{month}
+					</if>
+				</where>
+		)
+		SELECT
+			aa.org_uuid,
+			aa.org_name,
+			aa.line_uuid,
+			aa.line_name,
+			aa.line_type,
+			aa.sta_uuid,
+			aa.sta_seq,
+			aa.sta_name,
+			aa.upload_time_month,
+			aa.upload_time_hour,
+			AVG (aa.sta_length_time) AS sta_length_time
+		FROM
+			 aa
+		<where>
+			<if test="month != null and month != ''">
+				AND aa.upload_time_month = #{month}
+			</if>
+		</where>
+		GROUP BY
+			aa.org_uuid,
+			aa.org_name,
+			aa.line_uuid,
+			aa.line_type,
+			aa.line_name,
+			aa.sta_uuid,
+			aa.sta_seq,
+			aa.sta_name,
+			aa.upload_time_month,
+			aa.upload_time_hour 
+  </select>
+</mapper>

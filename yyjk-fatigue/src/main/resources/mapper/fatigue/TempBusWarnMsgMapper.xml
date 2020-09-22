@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TempBusWarnMsgMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TempBusWarnMsg">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="warn_id" jdbcType="VARCHAR" property="warnId" />
+    <result column="warn_sid" jdbcType="VARCHAR" property="warnSid" />
+    <result column="warn_code" jdbcType="VARCHAR" property="warnCode" />
+    <result column="warn_name" jdbcType="VARCHAR" property="warnName" />
+    <result column="warn_line_group_sid" jdbcType="VARCHAR" property="warnLineGroupSid" />
+    <result column="warn_line_group_name" jdbcType="VARCHAR" property="warnLineGroupName" />
+    <result column="warn_line_group_no" jdbcType="VARCHAR" property="warnLineGroupNo" />
+    <result column="warn_line_sid" jdbcType="VARCHAR" property="warnLineSid" />
+    <result column="warn_line_name" jdbcType="VARCHAR" property="warnLineName" />
+    <result column="warn_line_no" jdbcType="VARCHAR" property="warnLineNo" />
+    <result column="warn_bus_sid" jdbcType="VARCHAR" property="warnBusSid" />
+    <result column="warn_bus_number" jdbcType="VARCHAR" property="warnBusNumber" />
+    <result column="warn_bus_selfcode" jdbcType="VARCHAR" property="warnBusSelfcode" />
+    <result column="warn_driver_sid" jdbcType="VARCHAR" property="warnDriverSid" />
+    <result column="warn_driver_name" jdbcType="VARCHAR" property="warnDriverName" />
+    <result column="warn_storage_time" jdbcType="TIMESTAMP" property="warnStorageTime" />
+    <result column="warn_start_time" jdbcType="TIMESTAMP" property="warnStartTime" />
+    <result column="warn_end_time" jdbcType="TIMESTAMP" property="warnEndTime" />
+    <result column="warn_start_lng" jdbcType="VARCHAR" property="warnStartLng" />
+    <result column="warn_start_lat" jdbcType="VARCHAR" property="warnStartLat" />
+    <result column="warn_end_lng" jdbcType="VARCHAR" property="warnEndLng" />
+    <result column="warn_end_lat" jdbcType="VARCHAR" property="warnEndLat" />
+    <result column="warn_mileage" jdbcType="VARCHAR" property="warnMileage" />
+    <result column="warn_station_sid" jdbcType="VARCHAR" property="warnStationSid" />
+    <result column="warn_station_seq" jdbcType="INTEGER" property="warnStationSeq" />
+    <result column="warn_line_type" jdbcType="VARCHAR" property="warnLineType" />
+    <result column="brs_sid" jdbcType="VARCHAR" property="brsSid" />
+    <result column="warn_available" jdbcType="BIT" property="warnAvailable" />
+    <result column="warn_closed_flag" jdbcType="VARCHAR" property="warnClosedFlag" />
+    <result column="warn_closed_by" jdbcType="VARCHAR" property="warnClosedBy" />
+    <result column="warn_closed_time" jdbcType="TIMESTAMP" property="warnClosedTime" />
+    <result column="warn_closed_note" jdbcType="VARCHAR" property="warnClosedNote" />
+    <result column="warn_gps" jdbcType="VARCHAR" property="warnGps" />
+    <result column="warn_duration" jdbcType="INTEGER" property="warnDuration" />
+    <result column="warn_speed" jdbcType="INTEGER" property="warnSpeed" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE temp_bus_warn_msg
+  </delete>
+</mapper>

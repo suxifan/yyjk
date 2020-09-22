@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseResourceInfoMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseResourceInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="resource_id" jdbcType="VARCHAR" property="resourceId" />
+    <result column="resource_name" jdbcType="VARCHAR" property="resourceName" />
+    <result column="resource_parent_id" jdbcType="VARCHAR" property="resourceParentId" />
+    <result column="resource_type" jdbcType="VARCHAR" property="resourceType" />
+    <result column="resource_level" jdbcType="VARCHAR" property="resourceLevel" />    
+    <result column="resource_title" jdbcType="VARCHAR" property="resourceTitle" />
+    <result column="resource_url" jdbcType="VARCHAR" property="resourceUrl" />
+    <result column="resource_sort" jdbcType="SMALLINT" property="resourceSort" />
+    <result column="resource_image" jdbcType="VARCHAR" property="resourceImage" />
+    <result column="resource_component" jdbcType="VARCHAR" property="resourceComponent" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="enabled" jdbcType="VARCHAR" property="enabled" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+  </resultMap>
+</mapper>

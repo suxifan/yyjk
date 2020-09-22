@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimBusMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimBus">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="bus_uuid" jdbcType="VARCHAR" property="busUuid" />
+    <result column="bus_dev_uuid" jdbcType="VARCHAR" property="busDevUuid" />
+    <result column="bus_plate_number" jdbcType="VARCHAR" property="busPlateNumber" />
+    <result column="bus_self_code" jdbcType="VARCHAR" property="busSelfCode" />
+    <result column="bus_fuel_type" jdbcType="VARCHAR" property="busFuelType" />
+    <result column="bus_isvalid" jdbcType="CHAR" property="busIsvalid" />
+    <result column="bus_org_uuid" jdbcType="VARCHAR" property="busOrgUuid" />
+    <result column="bus_line_uuid" jdbcType="VARCHAR" property="busLineUuid" />
+    <result column="bus_load_number" jdbcType="INTEGER" property="busLoadNumber" />
+    <result column="bus_create_time" jdbcType="TIMESTAMP" property="busCreateTime" />
+    <result column="bus_drop_flag" jdbcType="CHAR" property="busDropFlag" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_bus
+  </delete>
+</mapper>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimBusLineMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimBusLine">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_org_uuid" jdbcType="VARCHAR" property="lineOrgUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_isvalid" jdbcType="CHAR" property="lineIsvalid" />
+    <result column="line_isloop" jdbcType="INTEGER" property="lineIsloop" />
+    <result column="line_bf_type" jdbcType="INTEGER" property="lineBfType" />
+    <result column="line_drop_flag" jdbcType="CHAR" property="lineDropFlag" />
+    <result column="line_up_first_date" jdbcType="VARCHAR" property="lineUpFirstDate" />
+    <result column="line_up_last_date" jdbcType="VARCHAR" property="lineUpLastDate" />
+    <result column="line_create_time" jdbcType="TIMESTAMP" property="lineCreateTime" />
+    <result column="line_up_plan" jdbcType="VARCHAR" property="lineUpPlan" />
+    <result column="line_down_plan" jdbcType="VARCHAR" property="lineDownPlan" />
+    <result column="line_up_station_count" jdbcType="SMALLINT" property="lineUpStationCount" />
+    <result column="line_down_station_count" jdbcType="SMALLINT" property="lineDownStationCount" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="line_down_first_date" jdbcType="VARCHAR" property="lineDownFirstDate" />
+    <result column="line_down_last_date" jdbcType="VARCHAR" property="lineDownLastDate" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_bus_line
+  </delete>
+</mapper>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexPfBaseMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexPfBase">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="plate_number" jdbcType="VARCHAR" property="plateNumber" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="station_index" jdbcType="INTEGER" property="stationIndex" />
+    <result column="station_name" jdbcType="VARCHAR" property="stationName" />
+    <result column="up_count" jdbcType="INTEGER" property="upCount" />
+    <result column="down_count" jdbcType="INTEGER" property="downCount" />
+    <result column="pass_count" jdbcType="INTEGER" property="passCount" />
+    <result column="pass_time" jdbcType="DATE" property="passTime" />
+    <result column="p_date" jdbcType="VARCHAR" property="pDate" />
+    <result column="p_time" jdbcType="VARCHAR" property="pTime" />
+    <result column="full_load_num" jdbcType="VARCHAR" property="fullLoadNum" />
+    <result column="to_next_dic" jdbcType="REAL" property="toNextDic" />
+    <result column="company" jdbcType="VARCHAR" property="company" />
+  </resultMap>
+  
+  <!-- 获取线路站点客流综合列表-->
+	<select id="getPfBaseList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfBaseValue">
+		SELECT
+			nipb.company,
+			nipb.line_number lineNumber,
+			nipb.arrow,nipb.station_index stationIndex,
+			nipb.station_name stationName,
+			SUM(nipb.up_count) upCount,
+			SUM(nipb.down_count) downCount,
+			SUM(nipb.pass_count) passCount,SUM(cast(nipb.full_load_num as numeric)) fullLoadNum
+			<!-- ,round(cast(SUM(nipb.pass_count) as numeric)/ cast(SUM(cast(nipb.full_load_num as numeric)) as numeric),4) approval -->
+		FROM
+			net_index_pf_base nipb
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipb.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND nipb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipb.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipb.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY nipb.company,
+			nipb.line_number,
+			nipb.arrow,nipb.station_index,
+			nipb.station_name
+		ORDER BY nipb.station_index
+	</select>
+	
+	 <!-- 获取线路时段满载率gridData-->
+	<select id="getPfBaseApprovalList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfBaseValue">
+		SELECT
+			nipb.p_time pTime,round(cast(SUM(nipb.pass_count) as numeric)/ cast(SUM(cast(nipb.full_load_num as numeric)) as numeric),4) approval
+		FROM
+			net_index_pf_base nipb
+		LEFT JOIN net_data_busline ndb ON (ndb.line_number = nipb.line_number AND (CASE nipb.arrow WHEN '上行' THEN '1' WHEN '下行' THEN '2' ELSE nipb.arrow END) = ndb.arrow)
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND nipb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND ndb.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipb.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY nipb.p_time
+		ORDER BY to_timestamp(nipb.p_time,'hh24:mi') ASC
+	</select>
+	
+	<!-- 获取线路时段登降量gridData-->
+	<select id="getPfBaseUpDownList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfBaseValue">
+		SELECT
+			nipb.p_time pTime,SUM(nipb.up_count) upCount,SUM(nipb.down_count) downCount
+		FROM
+			net_index_pf_base nipb
+		LEFT JOIN net_data_busline ndb ON (ndb.line_number = nipb.line_number AND (CASE nipb.arrow WHEN '上行' THEN '1' WHEN '下行' THEN '2' ELSE nipb.arrow END) = ndb.arrow)
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND nipb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND ndb.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipb.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY nipb.p_time
+		ORDER BY to_timestamp(nipb.p_time,'hh24:mi') ASC
+	</select>
+</mapper>

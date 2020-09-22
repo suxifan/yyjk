@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexPfOdMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexPfOd">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="arrow" jdbcType="VARCHAR" property="arrow" />
+    <result column="s_station_name" jdbcType="VARCHAR" property="sStationName" />
+    <result column="s_station_index" jdbcType="INTEGER" property="sStationIndex" />
+    <result column="e_station_name" jdbcType="VARCHAR" property="eStationName" />
+    <result column="e_station_index" jdbcType="INTEGER" property="eStationIndex" />
+    <result column="brush_count" jdbcType="SMALLINT" property="brushCount" />
+    <result column="s_time" jdbcType="DATE" property="sTime" />
+    <result column="e_time" jdbcType="DATE" property="eTime" />
+    <result column="p_date" jdbcType="VARCHAR" property="pDate" />
+    <result column="p_time" jdbcType="VARCHAR" property="pTime" />
+  </resultMap>
+  
+  <!-- 获取线路各时间段客流详情-刷卡总量-->
+	<select id="getPfOdbrushCountList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfOdValue">
+		SELECT
+			nipo.p_time pTime,
+			SUM (nipo.brush_count) brushCount
+		FROM
+			net_index_pf_od nipo
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipo.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipo.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipo.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY
+			nipo.p_time
+		ORDER BY
+			to_timestamp(nipo.p_time,'hh24:mi') ASC
+	</select>
+	
+	<!-- 获取线路各时间段客流详情-周转量，平均运距-->
+	<select id="getPfOdZZLAndPJYJList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfOdValue">
+		SELECT
+			nipb.p_time pTime,
+			ROUND(CAST(SUM (nipb.pass_count * nipb.to_next_dic) / 1000 as numeric),3) zzl,
+			(CASE WHEN SUM(nipb.up_count) = 0 THEN 0 ELSE ROUND(CAST(SUM (nipb.pass_count * nipb.to_next_dic) / 1000 /SUM(nipb.up_count) as numeric), 3 ) END) pjyj
+		FROM
+			net_index_pf_base nipb
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipb.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipb.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipb.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY
+			nipb.p_time
+		ORDER BY
+			to_timestamp(nipb.p_time,'hh24:mi') ASC
+	</select>
+	
+	<!-- 获取线路OD-->
+	<select id="getPfLineOdCountList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfLineOdValue">
+		SELECT
+			ndb.company,
+			nipo.line_number lineNumber,
+			nipo.arrow,
+			nipo.s_station_name sStationName,
+			nipo.s_station_index sStationIndex,
+			nipo.e_station_name eStationName,
+			nipo.e_station_index eStationIndex,
+			SUM(nipo.brush_count) brushCount,
+			nipo.p_date pDate
+		FROM
+			net_index_pf_od_day nipo
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipo.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipo.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipo.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY
+			ndb.company,
+			nipo.line_number,
+			nipo.arrow,
+			nipo.s_station_name,
+			nipo.s_station_index,
+			nipo.e_station_name,
+			nipo.e_station_index,
+			nipo.p_date
+		ORDER BY
+			ndb.company,
+			nipo.line_number,
+			nipo.s_station_index,
+			nipo.e_station_index
+	</select>
+	
+	<!-- 获取线路OD图X轴数据-->
+	<select id="getPfODXCountList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfLineOdValue">
+		SELECT T.* FROM (SELECT 
+			nipo.s_station_name sStationName,
+			nipo.s_station_index sStationIndex,SUM(nipo.brush_count) brushCount
+		FROM
+			net_index_pf_od_day nipo
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipo.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipo.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipo.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY 
+			nipo.s_station_name,
+			nipo.s_station_index
+		ORDER BY
+			nipo.s_station_index) T
+		<where>
+		 	T.brushCount >=5
+		 </where>
+	</select>
+	
+	<!-- 获取线路OD图X轴下车站点数据-->
+	<select id="getPfODXEStationCountList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfLineOdValue">
+		SELECT T.* FROM (SELECT 
+			nipo.e_station_name sStationName,
+			nipo.e_station_index sStationIndex,0 brushCount
+		FROM
+			net_index_pf_od_day nipo
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipo.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipo.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipo.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY 
+			nipo.e_station_name,
+			nipo.e_station_index
+		ORDER BY
+			nipo.e_station_index) T
+		<where>
+		 	T.brushCount >=5
+		 </where>
+	</select>
+	
+	<!-- 获取线路OD图数据-->
+	<select id="getPfODEdgesList" parameterType="com.cictec.yyjk.linenet.model.vo.NetIndexPfBaseVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexPfLineOdValue">
+		SELECT T.* FROM (SELECT
+			nipo.s_station_name sStationName,
+			nipo.s_station_index sStationIndex,
+			nipo.e_station_name eStationName,
+			nipo.e_station_index eStationIndex,
+			SUM(nipo.brush_count) brushCount
+		FROM
+			net_index_pf_od_day nipo
+		LEFT JOIN (SELECT DISTINCT line_uuid,company,line_number FROM net_data_busline ) ndb ON ndb.line_number = nipo.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 	<if test="arrow != null and arrow != ''">
+		 		AND nipo.arrow = #{arrow}
+		 	</if>
+		 	<if test="pDate != null and pDate != ''">
+		 		AND nipo.p_date = #{pDate}
+		 	</if>
+		 </where>
+		GROUP BY
+			ndb.company,
+			nipo.line_number,
+			nipo.arrow,
+			nipo.s_station_name,
+			nipo.s_station_index,
+			nipo.e_station_name,
+			nipo.e_station_index,
+			nipo.p_date
+		ORDER BY
+			ndb.company,
+			nipo.line_number,
+			nipo.s_station_index,
+			nipo.e_station_index) T
+		<where>
+		 	T.brushCount >=5
+		 </where>
+	</select>
+  
+</mapper>

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.report.mapper.DispatchInfoMapper">
+  <!--1.0 返回结果集 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.DispatchInfoVo" id="resultMap">
+        <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
+         <result property="lineId" column="line_id"/>
+        <result property="lineName" column="line_name"/> 
+        <result property="realtimeMileage" column="realtime_mileage" jdbcType="FLOAT"/>        
+        <result property="planMileage" column="plan_mileage" jdbcType="FLOAT"/>
+        <result property="realtimeTrips" column="realtime_trips" jdbcType="FLOAT"/>
+         <result property="planTrips" column="plan_trips" jdbcType="FLOAT"/>
+        <result property="realtimeClasses" column="realtime_classes" jdbcType="FLOAT"/>
+        <result property="planClasses" column="plan_classes" jdbcType="FLOAT"/>        
+    </resultMap>
+    
+    <!-- 获取机构下线路计划里程  sum（线路上行里程*计划排班上行趟次）-->
+    <select id="getLinePlanMileage" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+	    WITH aa AS(
+		 SELECT
+			t1.bs_org_uuid AS org_id,t4.org_name,
+					 t1.bs_line_uuid as line_id,t5.line_name,t2.bsd_type,to_number(t2.bsd_plan_mileage,'9999999.999') as plan_mileage
+			FROM temp_bus_schedule t1 
+			LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+			LEFT JOIN dw_dim_bus_sys_org t4 ON t1.bs_org_uuid = t4.org_uuid 
+			LEFT JOIN dw_dim_bus_line t5 ON t1.bs_line_uuid = t5.line_uuid
+            <where>
+                  AND to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+                  AND t2.bsd_departure_time IS NOT NULL 
+                  AND T4.org_uuid != '1'
+                  <if test="orgId != null and orgId != ''">
+                      AND t1.bs_org_uuid = #{orgId}
+                  </if>                            
+             </where>
+		)
+		SELECT aa.org_id, aa.org_name,aa.line_id,aa.line_name,SUM(aa.plan_mileage) AS plan_mileage 
+		FROM aa
+		WHERE aa.plan_mileage > 0
+		GROUP BY aa.org_id, aa.org_name,aa.line_id,aa.line_name
+	    <!-- WITH aa AS(
+	        SELECT t1.org_id,t1.org_name,t1.line_id,t1.line_name,t1.org_sort_index, round(COALESCE(((t1.up_plan_mileage*t2.up_plan_trips)+ (t1.down_plan_mileage*t2.down_plan_trips)),0),2)as plan_mileage
+	            FROM (
+	                SELECT line_uuid as line_id,line_name,line_org_uuid AS org_id,org_name, t2.org_sort_index,to_number(COALESCE(line_up_plan,'0'),'9999999.9999999') AS up_plan_mileage, to_number(COALESCE(line_down_plan,'0'),'9999999.9999999') AS down_plan_mileage
+	                    FROM dw_dim_bus_line t1 LEFT JOIN dw_dim_bus_sys_org t2 on t1.line_org_uuid = t2.org_uuid
+	                     
+	                     
+	                     <where>
+	                          AND t1.line_isvalid = '1' AND t1.line_drop_flag = '0' 
+	                        AND t2.org_enabled = '1' AND t2.org_drop_flag = '0'
+	                        AND t2.org_uuid != '1'
+	                        <if test="orgId != null and orgId != ''">
+	                             AND t1.line_org_uuid = #{orgId}
+	                         </if>
+	                     </where>
+	                         
+	            ) t1 LEFT JOIN (
+	                    SELECT tt.org_id,tt.org_name,tt.line_id,tt.line_name,
+	                        SUM(CASE WHEN tt.bsd_type = '1' THEN tt.plan_trips ELSE 0 END) AS up_plan_trips,
+	                        SUM(CASE WHEN tt.bsd_type = '2' THEN tt.plan_trips ELSE 0 END) AS down_plan_trips
+	                    FROM (
+	                            SELECT
+	                            t1.bs_org_uuid AS org_id,t4.org_name,
+	                                 t1.bs_line_uuid as line_id,t5.line_name,t2.bsd_type,
+	                                SUM(to_number(t2.bsd_trip_coefficient,'9999999.9999999'))AS plan_trips
+	                            FROM temp_bus_schedule t1 
+	                            LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+	                            LEFT JOIN dw_dim_bus_sys_org t4 ON t1.bs_org_uuid = t4.org_uuid 
+	                            LEFT JOIN dw_dim_bus_line t5 ON t1.bs_line_uuid = t5.line_uuid
+	                            <where>
+	                                 AND to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+	                                 AND t2.bsd_departure_time IS NOT NULL 
+	                                 AND T4.org_uuid != '1'
+	                                 <if test="orgId != null and orgId != ''">
+	                                     AND t1.bs_org_uuid = #{orgId}
+	                                 </if>                            
+	                            </where>
+	                            GROUP BY t1.bs_org_uuid, t4.org_name,t1.bs_line_uuid,t5.line_name,t2.bsd_type
+	                    )tt
+	                    GROUP BY tt.org_id,tt.org_name,tt.line_id,tt.line_name
+	                )t2 ON t1.org_id = t2.org_id AND t1.line_id = t2.line_id 
+	                ORDER BY t1.org_sort_index,t1.line_id
+	            )
+	        SELECT aa.org_id,aa.org_name,aa.line_id,aa.line_name,aa.org_sort_index, aa.plan_mileage
+	        FROM aa
+	        WHERE aa.plan_mileage > 0 -->
+    </select>
+    
+     <!-- 按机构统计机构的计划里程    对线路里程求和-->
+    <select id="getOrgPlanMileage"  resultMap="resultMap">
+	    WITH aa AS(
+			 SELECT
+				t1.bs_org_uuid AS org_id,t4.org_name,
+						 t1.bs_line_uuid as line_id,t5.line_name,t2.bsd_type,to_number(t2.bsd_plan_mileage,'9999999.999') as plan_mileage
+				FROM temp_bus_schedule t1 
+				LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+				LEFT JOIN dw_dim_bus_sys_org t4 ON t1.bs_org_uuid = t4.org_uuid 
+				LEFT JOIN dw_dim_bus_line t5 ON t1.bs_line_uuid = t5.line_uuid
+	            <where>
+	                  AND to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+	                  AND t2.bsd_departure_time IS NOT NULL 
+	                  AND T4.org_uuid != '1'
+	                  <if test="orgId != null and orgId != ''">
+	                      AND t1.bs_org_uuid = #{orgId}
+	                  </if>                            
+	             </where>
+			)
+			SELECT aa.org_id, aa.org_name,SUM(aa.plan_mileage) AS plan_mileage 
+			FROM aa
+			WHERE aa.plan_mileage > 0
+			GROUP BY aa.org_id, aa.org_name
+	       <!--  SELECT bb.org_id,bb.org_name,round(SUM(bb.plan_mileage),2) AS plan_mileage FROM(
+	            SELECT t1.org_id,t1.org_name,t1.line_id,t1.line_name,t1.org_sort_index, COALESCE(((t1.up_plan_mileage*t2.up_plan_trips)+ (t1.down_plan_mileage*t2.down_plan_trips)),0)as plan_mileage
+	                FROM (
+	                    SELECT line_uuid as line_id,line_name,line_org_uuid AS org_id,org_name, t2.org_sort_index,to_number(COALESCE(line_up_plan,'0'),'9999999.9999999') AS up_plan_mileage, to_number(COALESCE(line_down_plan,'0'),'9999999.9999999') AS down_plan_mileage
+	                        FROM dw_dim_bus_line t1 LEFT JOIN dw_dim_bus_sys_org t2 on t1.line_org_uuid = t2.org_uuid
+	                         where
+	                              t1.line_isvalid = '1' AND t1.line_drop_flag = '0' 
+	                            AND t2.org_enabled = '1' AND t2.org_drop_flag = '0'
+	                            AND t2.org_uuid != '1'
+	                ) t1 LEFT JOIN (
+	                        SELECT tt.org_id,tt.org_name,tt.line_id,tt.line_name,
+	                            SUM(CASE WHEN tt.bsd_type = '1' THEN tt.plan_trips ELSE 0 END) AS up_plan_trips,
+	                            SUM(CASE WHEN tt.bsd_type = '2' THEN tt.plan_trips ELSE 0 END) AS down_plan_trips
+	                        FROM (
+	                                SELECT
+	                                t1.bs_org_uuid AS org_id,t4.org_name,
+	                                     t1.bs_line_uuid as line_id,t5.line_name,t2.bsd_type,
+	                                    SUM(to_number(t2.bsd_trip_coefficient,'9999999.9999999'))AS plan_trips
+	                                FROM temp_bus_schedule t1 
+	                                LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+	                                LEFT JOIN dw_dim_bus_sys_org t4 ON t1.bs_org_uuid = t4.org_uuid 
+	                                LEFT JOIN dw_dim_bus_line t5 ON t1.bs_line_uuid = t5.line_uuid
+	                                where
+	                                      to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+	                                     AND t2.bsd_departure_time IS NOT NULL 
+	                                     AND T4.org_uuid != '1'
+	                                GROUP BY t1.bs_org_uuid, t4.org_name,t1.bs_line_uuid,t5.line_name,t2.bsd_type
+	                        )tt
+	                        GROUP BY tt.org_id,tt.org_name,tt.line_id,tt.line_name
+	                )t2 ON t1.org_id = t2.org_id AND t1.line_id = t2.line_id 
+	        )bb 
+	        GROUP BY bb.org_id,bb.org_name,bb.org_sort_index
+	        HAVING round(SUM(bb.plan_mileage),2) >0
+	        ORDER BY bb.org_sort_index -->
+    </select>
+       
+    <!-- 分公司进来看各自分公司下线路的计划趟次 -->
+    <select id="getBranchCompanyPlanTrips" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+        WITH aa AS(
+            SELECT
+                t1.bs_org_uuid AS org_id,t4.org_name,
+                t1.bs_line_uuid as line_id,t5.line_name,
+                round(SUM(to_number(t2.bsd_trip_coefficient,'9999999.9999999')),2) AS plan_trips
+            FROM
+                temp_bus_schedule t1
+            LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t4 ON t1.bs_org_uuid = t4.org_uuid 
+            LEFT JOIN dw_dim_bus_line t5 ON t1.bs_line_uuid = t5.line_uuid
+            <where>
+                AND to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+                AND t2.bsd_departure_time IS NOT NULL
+                AND t1.bs_org_uuid != '1'
+                <if test="orgId != null and orgId != ''">
+                     AND t1.bs_org_uuid = #{orgId}
+                 </if>
+            </where>
+            GROUP BY t1.bs_org_uuid, t4.org_name,t1.bs_line_uuid,t5.line_name 
+            ORDER BY t1.bs_line_uuid
+        )
+        SELECT aa.org_id,aa.org_name,aa.line_id,aa.line_name,aa.plan_trips
+        FROM aa
+        WHERE aa.plan_trips > 0
+    </select>
+ 
+    <!-- 总公司进来看各分公司总的计划趟次-->
+    <select id="getHeadCompanyPlanTrips" resultMap="resultMap">
+        WITH aa AS(
+            SELECT
+                t1.bs_org_uuid AS org_uuid,t4.org_name,t4.org_sort_index,
+                t1.bs_line_uuid as line_uuid,t5.line_name,
+                SUM(to_number(t2.bsd_trip_coefficient,'9999999.9999999'))AS plan_trips
+            FROM
+                temp_bus_schedule t1
+            LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t4 ON t1.bs_org_uuid = t4.org_uuid 
+            LEFT JOIN dw_dim_bus_line t5 ON t1.bs_line_uuid = t5.line_uuid
+            WHERE 1= 1
+            AND to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+            AND t2.bsd_departure_time IS NOT NULL
+            AND t1.bs_org_uuid != '1'
+            GROUP BY t1.bs_org_uuid, t4.org_name,t4.org_sort_index,t1.bs_line_uuid,t5.line_name 
+        )
+        SELECT aa.org_uuid as org_id,aa.org_name,round(SUM(aa.plan_trips),2) AS plan_trips 
+                FROM aa GROUP BY aa.org_uuid,aa.org_name,aa.org_sort_index
+                HAVING round(SUM(aa.plan_trips),2) > 0
+                ORDER BY aa.org_sort_index
+    </select>
+    
+    <!-- 分公司进来看各自分公司下线路的计划班次 -->
+    <select id="getBranchCompanyPlanClasses" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+         SELECT
+              t1.bs_org_uuid AS org_id,t3.org_name,
+              t1.bs_line_uuid as line_id,t4.line_name,max(t2.bsd_shift) AS plan_classes
+         FROM temp_bus_schedule t1 LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+         LEFT JOIN dw_dim_bus_sys_org t3 ON t1.bs_org_uuid = t3.org_uuid 
+         LEFT JOIN dw_dim_bus_line t4 ON t1.bs_line_uuid = t4.line_uuid
+         <where>
+             AND to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+             AND t2.bsd_departure_time IS NOT NULL
+             AND T3.org_uuid != '1'
+             <if test="orgId != null and orgId != ''">
+                 AND t1.bs_org_uuid = #{orgId}
+             </if>
+         </where>        
+        GROUP BY t1.bs_org_uuid, t3.org_name,t1.bs_line_uuid,t4.line_name 
+        HAVING max(t2.bsd_shift) >0
+        ORDER BY t1.bs_line_uuid
+    </select>
+ 
+    <!-- 总公司进来看各分公司总的计划班次 -->
+    <select id="getHeadCompanyPlanClasses" resultMap="resultMap">
+        WITH aa AS(
+            SELECT
+                 t1.bs_org_uuid AS org_uuid,t3.org_name,t3.org_sort_index,
+                 t1.bs_line_uuid as line_uuid,t4.line_name,max(t2.bsd_shift) AS plan_classes
+            FROM temp_bus_schedule t1 LEFT JOIN temp_bus_schedule_day t2 ON t1.bs_uuid = t2.bsd_bs_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t3 ON t1.bs_org_uuid = t3.org_uuid 
+            LEFT JOIN dw_dim_bus_line t4 ON t1.bs_line_uuid = t4.line_uuid
+            WHERE to_char(t1.bs_schedule_time,'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd') 
+            AND t2.bsd_departure_time IS NOT NULL
+            AND T3.org_uuid != '1'
+            GROUP BY t1.bs_org_uuid, t3.org_name,t3.org_sort_index,t1.bs_line_uuid,t4.line_name 
+        )
+        SELECT aa.org_uuid as org_id,aa.org_name,SUM(aa.plan_classes) AS plan_classes
+        FROM aa 
+        GROUP BY aa.org_uuid,aa.org_name,aa.org_sort_index
+        HAVING SUM(aa.plan_classes) > 0
+        ORDER BY aa.org_sort_index
+    </select>
+</mapper>

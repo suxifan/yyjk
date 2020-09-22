@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.VoicepromptTempMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.VoicepromptTemp">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="voicetemp_uuid" jdbcType="VARCHAR" property="voicetempUuid" />
+    <result column="voicetemp_message_content" jdbcType="VARCHAR" property="voicetempMessageContent" />
+    <result column="voicetemp_type_uuid" jdbcType="VARCHAR" property="voicetempTypeUuid" />
+  </resultMap>
+</mapper>

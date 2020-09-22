@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexDeaTransfordataMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexDeaTransfordata">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="ovehiclecou" jdbcType="REAL" property="ovehiclecou" />
+    <result column="nvehiclecou" jdbcType="REAL" property="nvehiclecou" />
+    <result column="oworktime" jdbcType="REAL" property="oworktime" />
+    <result column="nworktime" jdbcType="REAL" property="nworktime" />
+    <result column="opjpc" jdbcType="REAL" property="opjpc" />
+    <result column="npjpc" jdbcType="REAL" property="npjpc" />
+    <result column="ofzx" jdbcType="REAL" property="ofzx" />
+    <result column="nfzx" jdbcType="REAL" property="nfzx" />
+    <result column="ositecount" jdbcType="REAL" property="ositecount" />
+    <result column="nsitecount" jdbcType="REAL" property="nsitecount" />
+    <result column="olength" jdbcType="REAL" property="olength" />
+    <result column="nlength" jdbcType="REAL" property="nlength" />
+    <result column="oiskt" jdbcType="REAL" property="oiskt" />
+    <result column="niskt" jdbcType="REAL" property="niskt" />
+    <result column="ospeed" jdbcType="REAL" property="ospeed" />
+    <result column="nspeed" jdbcType="REAL" property="nspeed" />
+    <result column="obrushcount" jdbcType="REAL" property="obrushcount" />
+    <result column="nbrushcount" jdbcType="REAL" property="nbrushcount" />
+    <result column="oltd" jdbcType="REAL" property="oltd" />
+    <result column="nltd" jdbcType="REAL" property="nltd" />
+    <result column="obld" jdbcType="REAL" property="obld" />
+    <result column="nbld" jdbcType="REAL" property="nbld" />
+    <result column="ojtxs" jdbcType="REAL" property="ojtxs" />
+    <result column="njtxs" jdbcType="REAL" property="njtxs" />
+    <result column="omzl" jdbcType="REAL" property="omzl" />
+    <result column="nmzl" jdbcType="REAL" property="nmzl" />
+    <result column="op_distance" jdbcType="REAL" property="opdistance" />
+    <result column="np_distance" jdbcType="REAL" property="npdistance" />
+    <result column="ofh" jdbcType="REAL" property="ofh" />
+    <result column="nfh" jdbcType="REAL" property="nfh" />
+  </resultMap>
+  
+  
+  
+  
+  <!-- 获取线网评分指标链接-列表-->
+  <select id="getDeaDataList" parameterType="com.cictec.yyjk.linenet.model.vo.NetXmlConfigVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexDeaTransfordataValue">
+		SELECT ndb.company,t1.line_number lineNumber, ${codes}
+		FROM net_index_dea_transfordata t1
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = t1.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+	</select>
+  
+</mapper>

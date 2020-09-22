@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetDataBasestationMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetDataBasestation">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="station_id" jdbcType="VARCHAR" property="stationId" />
+    <result column="station_name" jdbcType="VARCHAR" property="stationName" />
+    <result column="lon" jdbcType="VARCHAR" property="lon" />
+    <result column="lat" jdbcType="VARCHAR" property="lat" />
+    <result column="angle" jdbcType="VARCHAR" property="angle" />
+  </resultMap>
+  
+  <!-- 获取分公司站点数-->
+	<select id="getCompanyBaseStations" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBasestationValue">
+		SELECT
+			bdb2.company,
+			count(ndb.station_id) basestations
+		FROM
+			net_data_basestation ndb
+		LEFT JOIN net_data_busstation ndbl ON ndb.station_id = ndbl.station_id
+		LEFT JOIN net_data_busline bdb2 ON bdb2.uuid = ndbl.pid
+		<where>
+				AND bdb2.company is not null
+		 	<if test="company != null and company != ''">
+		 		AND bdb2.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND bdb2.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		GROUP BY bdb2.company
+		ORDER BY bdb2.company
+	</select>
+	
+	 <!-- 获取所有站点名-->
+	<select id="getAllBaseStationNames" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBasestationValue">
+		SELECT DISTINCT station_name stationName FROM net_data_basestation
+		ORDER BY station_name
+	</select>
+  
+</mapper>

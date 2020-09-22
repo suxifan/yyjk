@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BusLineMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BusLine">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_org_uuid" jdbcType="VARCHAR" property="lineOrgUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_isvalid" jdbcType="CHAR" property="lineIsvalid" />
+    <result column="line_isloop" jdbcType="INTEGER" property="lineIsloop" />
+    <result column="line_bf_type" jdbcType="INTEGER" property="lineBfType" />
+    <result column="line_drop_flag" jdbcType="CHAR" property="lineDropFlag" />
+    <result column="line_up_first_date" jdbcType="VARCHAR" property="lineUpFirstDate" />
+    <result column="line_up_last_date" jdbcType="VARCHAR" property="lineUpLastDate" />
+    <result column="line_create_time" jdbcType="TIMESTAMP" property="lineCreateTime" />
+    <result column="line_up_plan" jdbcType="VARCHAR" property="lineUpPlan" />
+    <result column="line_down_plan" jdbcType="VARCHAR" property="lineDownPlan" />
+    <result column="line_up_station_count" jdbcType="SMALLINT" property="lineUpStationCount" />
+    <result column="line_down_station_count" jdbcType="SMALLINT" property="lineDownStationCount" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="line_down_first_date" jdbcType="VARCHAR" property="lineDownFirstDate" />
+    <result column="line_down_last_date" jdbcType="VARCHAR" property="lineDownLastDate" />
+  </resultMap>
+  
+  <!-- 线路站点信息 -->
+  <resultMap type="com.cictec.yyjk.base.model.vo.BusLineStationVo" id="lineStationResultMap">
+        <result property="lineUuid" column="line_uuid"/>
+        <result property="lineName" column="line_name"/>
+        <result property="lineType" column="line_type"/>
+        <result property="staUuid" column="sta_uuid"/>
+        <result property="staName" column="sta_name"/>
+        <result property="staSeq" column="sta_seq"/>
+  </resultMap>
+
+  <!-- 带机构名的线路信息 -->
+  <resultMap type="com.cictec.yyjk.base.model.vo.BusLineVo" id="lineResultMap">
+        <result property="lineId" column="line_uuid"/>
+        <result property="lineName" column="line_name"/>
+        <result property="parLineUuid" column="par_line_uuid"/>
+        <result property="orgId" column="org_uuid"/>
+        <result property="orgName" column="org_name"/>
+  </resultMap>
+   
+  <!-- 获取所有线路站点信息 -->
+  <select id="getAllLineStations" resultMap="lineStationResultMap">
+		SELECT t1.line_name,t1.line_type,t3.sta_name,t3.sta_uuid,t2.ls_sequence as sta_seq
+		FROM dw_dim_bus_line t1 LEFT JOIN dw_dim_line_station t2 ON t1.line_uuid = t2.ls_line_uuid 
+		LEFT JOIN dw_dim_bus_station t3 ON t2.ls_sta_uuid = t3.sta_uuid 
+		WHERE t2.ls_delete_flag = '0'
+			AND t3.sta_isvalid = '1'
+			AND t3.sta_drop_flag = '0' 
+			AND t1.line_isvalid = '1'
+			AND t1.line_drop_flag = '0'
+  </select>
+  
+  <!-- 获取线路信息 -->
+  <select id="getAllBusLines" resultMap="lineResultMap">
+	    SELECT
+			t1.line_uuid,
+			t1.line_name,
+			t1.par_line_uuid,
+			t2.org_name,
+			t2.org_uuid
+		FROM
+			dw_dim_bus_line t1 LEFT JOIN dw_dim_bus_sys_org t2 ON t1.line_org_uuid = t2.org_uuid
+		WHERE
+			t1.line_isvalid = '1'
+		AND t1.line_drop_flag = '0'
+   </select>
+   
+   <!-- 获取机构下线路总数 -->
+   <select id="getLineCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT COUNT(*) AS total_line FROM dw_dim_bus_line 
+	    <where>
+			<if test="orgId != null and orgId != ''">
+				AND line_org_uuid = #{orgId}
+			</if>
+			AND line_isvalid = '1'
+	    	AND line_drop_flag = '0'		    	
+	    </where>
+	</select>
+</mapper>

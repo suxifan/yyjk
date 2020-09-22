@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetDataBusstationMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetDataBusstation">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="pid" jdbcType="VARCHAR" property="pid" />
+    <result column="station_id" jdbcType="VARCHAR" property="stationId" />
+    <result column="station_name" jdbcType="VARCHAR" property="stationName" />
+    <result column="station_index" jdbcType="INTEGER" property="stationIndex" />
+    <result column="predistance" jdbcType="VARCHAR" property="predistance" />
+    <result column="lat" jdbcType="VARCHAR" property="lat" />
+    <result column="lon" jdbcType="VARCHAR" property="lon" />
+  </resultMap>
+  
+  	<!-- 获取分公司站位数-->
+	<select id="getCompanyBusStations" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.view.NetDataBusstationValue">
+		SELECT
+			ndbl.company,
+			count(ndb.station_id) busstations
+		FROM
+			net_data_busstation ndb
+		LEFT JOIN net_data_busline ndbl ON ndb.pid = ndbl.uuid
+		<where>
+				ndbl.company is not null
+		 	<if test="company != null and company != ''">
+		 		AND ndbl.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndbl.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		GROUP BY ndbl.company
+		ORDER BY ndbl.company
+	</select>
+</mapper>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimLineStationMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimLineStation">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="ls_uuid" jdbcType="VARCHAR" property="lsUuid" />
+    <result column="ls_line_uuid" jdbcType="VARCHAR" property="lsLineUuid" />
+    <result column="ls_line_type" jdbcType="VARCHAR" property="lsLineType" />
+    <result column="ls_sta_uuid" jdbcType="VARCHAR" property="lsStaUuid" />
+    <result column="ls_sta_lng" jdbcType="VARCHAR" property="lsStaLng" />
+    <result column="ls_sta_lat" jdbcType="VARCHAR" property="lsStaLat" />
+    <result column="ls_sequence" jdbcType="INTEGER" property="lsSequence" />
+    <result column="ls_delete_flag" jdbcType="CHAR" property="lsDeleteFlag" />
+    <result column="ls_delete_time" jdbcType="TIMESTAMP" property="lsDeleteTime" />
+    <result column="ls_start_to_this_distance" jdbcType="VARCHAR" property="lsStartToThisDistance" />
+    <result column="ls_major" jdbcType="CHAR" property="lsMajor" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_line_station
+  </delete> 
+  
+  <select id="getLineStationBetweenDistance" resultType="com.cictec.yyjk.timingtask.model.entity.DwDimLineStation">
+		SELECT
+			t1.ls_line_uuid as lsLineUuid,
+			t1.ls_line_type as lsLineType,
+			t1.ls_sta_uuid as lsStaUuid,
+		  (t1.ls_sequence + 1) as lsSequence,
+			(t2.ls_start_to_this_distance::INTEGER - t1.ls_start_to_this_distance::INTEGER) as lsBetweenDistance
+		FROM
+			(
+				SELECT
+					ls_line_uuid,
+					ls_line_type,
+					ls_sta_uuid,
+					ls_sequence,
+					ls_start_to_this_distance
+				FROM 
+					dw_dim_line_station 
+				WHERE
+				    ls_delete_flag = '0'
+			) t1,
+			(
+				SELECT
+					ls_line_uuid,
+					ls_line_type,
+					ls_sta_uuid,
+					ls_sequence,
+					ls_start_to_this_distance
+				FROM
+					dw_dim_line_station
+				WHERE
+				    ls_delete_flag = '0'
+			) t2
+		
+		WHERE t1.ls_line_uuid = t2.ls_line_uuid
+		and t1.ls_line_type = t2.ls_line_type
+		AND t1.ls_sequence+1 = t2.ls_sequence
+		ORDER BY t1.ls_line_uuid,t1.ls_line_type,t1.ls_sequence
+  </select>
+  
+  
+     <select id="getLineStaSeqs" resultType="java.lang.String">
+		 SELECT
+		  ls_sequence
+		 FROM
+		  dw_dim_line_station
+		 <where>  ls_delete_flag='0'
+		  <if test="lineUuid != null and lineUuid != ''">
+		   AND ls_line_uuid = #{lineUuid}
+		  </if>
+		  <if test="lineType != null and lineType != ''">
+		   AND ls_line_type = #{lineType}
+		  </if> 
+		 </where>
+		 ORDER BY
+		  ls_sequence  
+  </select>
+  
+  
+   <select id="getAll"  resultMap="BaseResultMap">
+		 SELECT
+		  *
+		 FROM
+		  dw_dim_line_station
+		 WHERE ls_delete_flag='0'
+  </select>
+</mapper>

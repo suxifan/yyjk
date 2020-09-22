@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseSysParamInfoMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseSysParamInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="sys_uuid" jdbcType="INTEGER" property="sysUuid" />
+    <result column="param_name" jdbcType="VARCHAR" property="paramName" />
+    <result column="param_value" jdbcType="VARCHAR" property="paramValue" />
+    <result column="param_isvalid" jdbcType="CHAR" property="paramIsvalid" />
+    <result column="crate_time" jdbcType="TIMESTAMP" property="crateTime" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+  </resultMap>
+  
+  <resultMap id="ResultMap" type="com.cictec.yyjk.base.model.view.BaseSysParamInfoView">
+    <id column="sys_uuid" jdbcType="INTEGER" property="sysUuid" />
+    <result column="param_name" jdbcType="VARCHAR" property="paramName" />
+    <result column="param_value" jdbcType="VARCHAR" property="paramValue" />
+    <result column="param_isvalid" jdbcType="CHAR" property="paramIsvalid" />
+    <result column="crate_time" jdbcType="TIMESTAMP" property="crateTime" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="warn_type" jdbcType="VARCHAR" property="warnType" />
+  </resultMap>
+  
+  <select id="getBaseSysParamInfoByExample"  parameterType="com.cictec.yyjk.base.model.vo.BaseSysParamInfoVo" resultMap="ResultMap">
+	SELECT
+		t1.sys_uuid,t1.param_name,t1.param_value,t1.param_isvalid,t1.crate_time,t1.remark,t2.pl_display warn_type
+	FROM
+		base_sys_param_info t1
+	LEFT JOIN dw_dim_pl_sys_datadict t2 ON t1.param_name = t2.pl_value
+	<where>
+		1 = 1
+		<if test="paramName != null and paramName != ''">
+	   	 	AND t1.param_name like '%' || #{paramName} || '%'
+	    </if> 
+		<if test="paramIsvalid != null and paramIsvalid != ''">
+	   	 	AND t1.param_isvalid = #{paramIsvalid}
+	    </if> 
+	</where>  
+	  
+  </select>
+</mapper>

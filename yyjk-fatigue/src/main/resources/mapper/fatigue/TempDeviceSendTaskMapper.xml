@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TempDeviceSendTaskMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TempDeviceSendTask">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="task_uuid" jdbcType="VARCHAR" property="taskUuid" />
+    <result column="task_name" jdbcType="VARCHAR" property="taskName" />
+    <result column="task_create_time" jdbcType="TIMESTAMP" property="taskCreateTime" />
+    <result column="task_create_user" jdbcType="VARCHAR" property="taskCreateUser" />
+    <result column="task_issue_num" jdbcType="INTEGER" property="taskIssueNum" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+  </resultMap>
+  
+  
+  <!-- 参数任务下发列表 -->
+  <select id="selectTaskPage" parameterType="com.cictec.yyjk.fatigue.model.entity.TempDeviceSendTask" resultMap="BaseResultMap">
+  	select t.* from temp_device_send_task t
+  	<where> 
+  		1=1
+  		<if test="taskName != null and taskName != '' "><![CDATA[ AND t.task_name like '%${taskName}%']]></if>
+  	</where>
+  	ORDER BY t.task_create_time DESC    	
+  </select>
+  
+</mapper>

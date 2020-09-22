@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisPeakMonthMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisPeakMonth">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="peak_uuid" jdbcType="VARCHAR" property="peakUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="upload_time_month" jdbcType="VARCHAR" property="uploadTimeMonth" />
+    <result column="upload_time_week" jdbcType="VARCHAR" property="uploadTimeWeek" />
+    <result column="upload_time_hour" jdbcType="INTEGER" property="uploadTimeHour" />
+    <result column="pfr_get_on_number" jdbcType="INTEGER" property="pfrGetOnNumber" />
+    <result column="pfr_get_off_number" jdbcType="INTEGER" property="pfrGetOffNumber" />
+  </resultMap>
+  
+  <select id="getAnalysisPeakMonthDatas" parameterType="java.lang.String" resultMap="BaseResultMap">
+		WITH temp_b AS (
+			SELECT
+				org_uuid,
+				org_name,
+				pfr_line_uuid,
+				pfr_line_name,
+				pfr_line_type,
+				<!-- 取月份 -->
+				LEFT (
+					CAST (pfr_upload_time AS VARCHAR),
+					7
+				) AS upload_time_month,
+				<!-- 星期属性 -->
+				(
+					ARRAY [ 'Sun',
+					'Mon',
+					'Tue',
+					'Wed',
+					'Thur',
+					'Fri',
+					'Sat' ]
+				) [ EXTRACT (dow FROM pfr_upload_time) + 1 ] AS upload_time_week,
+				<!-- 取小时 -->
+				EXTRACT (HOUR FROM pfr_upload_time) AS upload_time_hour,
+				LEFT(CAST(pfr_upload_time AS VARCHAR),10) AS pfr_trip_date,
+				<!-- 平均上车人数 -->
+				SUM (pfr_get_on_number) AS pfr_get_on_number,
+				<!-- 平均下车人数 -->
+				SUM (pfr_get_off_number) AS pfr_get_off_number
+			FROM
+				mid_passenger_flow_result T 
+ 				<where>
+					<if test="month != null and month != ''">
+						AND to_char(pfr_upload_time,'yyyy-MM') = #{month} 
+					</if>
+				</where> 
+			GROUP BY
+				org_uuid,
+				org_name,
+				pfr_line_uuid,
+				pfr_line_name,
+				pfr_line_type,
+				LEFT (
+					CAST (pfr_upload_time AS VARCHAR),
+					7
+				),
+				<!-- 星期属性 -->
+				(
+					ARRAY [ 'Sun',
+					'Mon',
+					'Tue',
+					'Wed',
+					'Thur',
+					'Fri',
+					'Sat' ]
+				) [ EXTRACT (dow FROM pfr_upload_time) + 1 ], EXTRACT (HOUR FROM pfr_upload_time),
+				LEFT(CAST(pfr_upload_time AS VARCHAR),10)
+		) SELECT
+			org_uuid,
+			org_name,
+			pfr_line_uuid AS line_uuid,
+			pfr_line_name AS line_name,
+			pfr_line_type AS line_type,
+			upload_time_month,
+			upload_time_week,
+			upload_time_hour,
+			round(AVG(pfr_get_on_number)) AS pfr_get_on_number,
+			round(AVG(pfr_get_off_number)) AS pfr_get_off_number
+		FROM
+			temp_b
+		GROUP BY
+			org_uuid,
+			org_name,
+			pfr_line_uuid,
+			pfr_line_name,
+			pfr_line_type,
+			upload_time_week,
+			upload_time_month,
+			upload_time_hour
+  </select>
+</mapper>

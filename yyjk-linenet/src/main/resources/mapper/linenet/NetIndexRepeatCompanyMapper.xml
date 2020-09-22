@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexRepeatCompanyMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatCompany">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="company" jdbcType="VARCHAR" property="company" />
+    <result column="sc_count" jdbcType="SMALLINT" property="scCount" />
+    <result column="repeat_sc_count" jdbcType="SMALLINT" property="repeatScCount" />
+    <result column="repeatability" jdbcType="REAL" property="repeatability" />
+    <result column="top3" jdbcType="VARCHAR" property="top3" />
+  </resultMap>
+  
+  <!-- 获取分公司线路重复度-->
+	<select id="getCompanyLineRepeat" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.view.NetIndexRepeatCompanyValue">
+		SELECT
+			nirc.company,
+			nirc.sc_count scCount,
+			nirc.repeat_sc_count repeatScCount,
+			nirc.repeatability
+		FROM
+			net_index_repeat_company nirc
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND nirc.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		
+		 	</if>
+		 </where>
+		ORDER BY nirc.company
+	</select>
+	
+</mapper>

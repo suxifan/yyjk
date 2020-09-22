@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.DwDimMapLineMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.DwDimMapLine">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="ml_uuid" jdbcType="VARCHAR" property="mlUuid" />
+    <result column="ml_line_uuid" jdbcType="VARCHAR" property="mlLineUuid" />
+    <result column="ml_sta_uuid" jdbcType="VARCHAR" property="mlStaUuid" />
+    <result column="ml_lng" jdbcType="VARCHAR" property="mlLng" />
+    <result column="ml_lat" jdbcType="VARCHAR" property="mlLat" />
+    <result column="ml_sequence" jdbcType="INTEGER" property="mlSequence" />
+    <result column="ml_line_type" jdbcType="VARCHAR" property="mlLineType" />
+    <result column="ml_distance" jdbcType="DOUBLE" property="mlDistance" />
+    <result column="ml_whichstop" jdbcType="VARCHAR" property="mlWhichstop" />
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE dw_dim_map_line
+  </delete>   
+</mapper>

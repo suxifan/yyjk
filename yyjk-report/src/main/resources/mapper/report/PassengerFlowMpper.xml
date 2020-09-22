@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.report.mapper.PassengerFlowMapper">
+  <!--1.0 返回结果集 -->
+    <resultMap type="com.cictec.yyjk.report.model.vo.PassengerFlowVo" id="resultMap">
+        <result property="lineName" column="line_name"/> 
+        <result property="timeInterval" column="time_interval"/>
+        <result property="personCount" column="person_count"/>
+        <result property="busLoadNumber" column="bus_load_number"/>
+        <result property="fullLoadRate" column="full_load_rate"/>
+        <result property="busNumber" column="bus_number"/>
+    </resultMap>
+      <resultMap type="com.cictec.yyjk.report.model.vo.HeatmapVo" id="heatmapResultMap">
+        <result property="staName" column="sta_name"/>
+        <result property="lng" column="sta_lng"/>
+        <result property="lat" column="sta_lnt"/>
+        <result property="getOnNumber" column="get_on_number"/>
+    </resultMap>  
+    
+    <!-- 总实时载客（人）、实时满载率 -->
+	<select id="getRealTimePersoncountAndFullLoadRate" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT b.time_interval,SUM(b.prf_get_person_count) as person_count,SUM(b.bus_load_number) as bus_load_number  
+			FROM (
+				SELECT a.prf_dev_code,a.prf_get_person_count,to_char(a.pfr_upload_time, 'yyyy-MM-dd') as time_interval,a.bus_load_number 
+				FROM (
+						SELECT t2.prf_dev_code,t2.prf_get_person_count,t2.pfr_upload_time,COALESCE(t4.bus_load_number,56) AS bus_load_number
+						FROM (<!-- 前15分钟车辆最后一条记录 -->
+								SELECT prf_dev_code,MAX(pfr_upload_time) as pfr_upload_time  FROM temp_t_passenger_flow_result 
+								<where>
+									pfr_upload_time >= CURRENT_TIMESTAMP::timestamp + '-15 minutes' AND pfr_upload_time &lt;= CURRENT_TIMESTAMP
+									<if test="lineUuids != null and lineUuids.size() >0">
+										AND pfr_line_uuid in 
+										<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+											#{lineUuid}
+										</foreach>
+									</if>
+								</where>
+								GROUP BY prf_dev_code
+						     )tt LEFT JOIN temp_t_passenger_flow_result t2 ON tt.prf_dev_code = t2.prf_dev_code AND tt.pfr_upload_time = t2.pfr_upload_time
+						         LEFT JOIN dw_dim_other_device t3 ON tt.prf_dev_code = t3.dev_code 
+						         LEFT JOIN dw_dim_bus t4 ON t3.dev_bus_plate_number = t4.bus_plate_number 
+								 <where>
+									<if test="orgId != null and orgId != ''">
+										AND t4.bus_org_uuid = #{orgId}
+									</if>
+								 </where>
+				) a 
+			) b GROUP BY time_interval
+		)
+		SELECT AA.time_interval,AA.person_count,AA.bus_load_number,round((AA.person_count::numeric/AA.bus_load_number::numeric) * 100 ,2) full_load_rate
+		FROM AA 
+	</select>  
+    
+	<!-- 当日累计客流-->
+	<select id="getTotalPassengerFlow" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT to_char(t1.pfr_upload_time, 'yyyy-MM-dd') AS time_interval,t1.pfr_get_on_number
+			FROM temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+			LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+			<where>
+				to_char(t1.pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+				<if test="orgId != null and orgId != ''">
+					AND t3.org_uuid = #{orgId}
+				</if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND t1.pfr_line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>
+			</where>
+		)
+		SELECT AA.time_interval,SUM(AA.pfr_get_on_number) AS person_count 
+		FROM AA 
+		GROUP BY AA.time_interval
+	</select>
+	
+    <!-- 昨日同一时间累计客流-->
+    <select id="getYesterdayTotalPassengerFlow" resultMap="resultMap">
+        WITH AA AS(
+            SELECT to_char(t1.pfr_upload_time, 'yyyy-MM-dd') AS time_interval,t1.pfr_get_on_number
+            FROM mid_passenger_flow_result t1 
+            LEFT JOIN (SELECT * FROM dw_dim_bus_line WHERE line_isvalid = '1' AND line_drop_flag = '0') t2 ON t1.pfr_line_uuid = t2.line_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+            <where>
+                <if test="startTime != null">
+                    AND t1.pfr_upload_time >= #{startTime}
+                </if>
+                <if test="endTime != null">
+                     AND t1.pfr_upload_time &lt;= #{endTime}
+                </if>
+                <if test="orgId != null and orgId != ''">
+                    AND t3.org_uuid = #{orgId}
+                </if>
+                <if test="lineUuids != null and lineUuids.size() >0">
+					AND t1.pfr_line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>
+            </where>
+        )
+        SELECT AA.time_interval,SUM(AA.pfr_get_on_number) AS person_count FROM AA 
+        GROUP BY AA.time_interval
+    </select> 
+
+    <!-- 当日累计客流  统计到公司-->
+    <select id="getCompanyTotalPassengerFlow"  resultType="Map">
+        SELECT t3.org_uuid "orgUuid",t3.org_name "orgName",SUM(t1.pfr_get_on_number) "personCount"
+        FROM temp_t_passenger_flow_result t1 
+            LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+        WHERE to_char(t1.pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd') 
+        AND t3.org_uuid != '1'
+        GROUP BY t3.org_sort_index,t3.org_uuid,t3.org_name
+          ORDER BY t3.org_sort_index
+    </select>
+        
+	<!-- 当日累计客流  统计到线路-->
+	<select id="getLineTotalPassengerFlow" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT to_char(t1.pfr_upload_time, 'yyyy-MM-dd') AS time_interval,t1.pfr_get_on_number,t2.line_name
+			FROM temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+			LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+			<where>
+				to_char(t1.pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+				<if test="orgId != null and orgId != ''">
+					AND t3.org_uuid = #{orgId}
+				</if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND t1.pfr_line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>
+			</where>
+		)
+		SELECT AA.time_interval,AA.line_name,SUM(AA.pfr_get_on_number) AS person_count 
+		FROM AA 
+		GROUP BY AA.time_interval,AA.line_name
+		ORDER BY AA.line_name
+	</select>
+	
+	<!-- 实时客流人次  时间间隔15分钟-->
+	<select id="getRealTimePassengerFlow" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT t1.pfr_upload_time,
+				   t1.pfr_get_on_number,
+				   CASE
+					 WHEN substr(to_char(t1.pfr_upload_time, 'yyyy-MM-dd HH:mi'),15, 16) :: integer &lt;15 then to_char(t1.pfr_upload_time,'HH24') || ':00:00' 
+					 WHEN substr(to_char(t1.pfr_upload_time, 'yyyy-MM-dd HH:mi'),15, 16) :: integer &lt;30 then to_char(t1.pfr_upload_time,'HH24') || ':15:00' 
+					 WHEN substr(to_char(t1.pfr_upload_time, 'yyyy-MM-dd HH:mi'),15, 16) :: integer &lt;45 then to_char(t1.pfr_upload_time,'HH24') || ':30:00' 
+					 ELSE to_char(t1.pfr_upload_time, 'HH24') || ':45:00' 
+				   END as time_interval
+			FROM  temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+			LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+			<where>
+				<!-- to_char(t1.pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd') -->
+				to_char(t1.pfr_upload_time, 'yyyy-MM-dd HH24:mi:ss') >= to_char(current_date, 'yyyy-MM-dd 06:00:00')
+				AND to_char(t1.pfr_upload_time, 'yyyy-MM-dd HH24:mi:ss') &lt;= to_char(current_date, 'yyyy-MM-dd 22:59:59')
+				<if test="orgId != null and orgId != ''">
+					AND t3.org_uuid = #{orgId}
+				</if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND t1.pfr_line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>
+			</where>
+		)
+		SELECT AA.time_interval,SUM(AA.pfr_get_on_number) as person_count
+		FROM AA
+		GROUP BY AA.time_interval
+		ORDER BY AA.time_interval
+	</select>
+	
+	<!-- 实时满载率  时间间隔15分钟-->
+	<select id="getRealTimeFullLoadRate" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT t1.time_interval,SUM(t1.prf_get_person_count) AS person_count ,SUM(COALESCE(t3.bus_load_number,56)) AS bus_load_number 
+			FROM (SELECT 
+			 		 pfr_upload_time,
+					 prf_dev_code,
+					 CASE WHEN prf_get_person_count &lt; 0 THEN 0 ELSE prf_get_person_count END AS prf_get_person_count,<!-- 去掉为负数的车内人数 -->
+					 CASE
+						 WHEN substr(to_char(pfr_upload_time, 'yyyy-MM-dd HH:mi'),15, 16) :: integer &lt;15 then to_char(pfr_upload_time,'HH24')||':00:00' 
+						 WHEN substr(to_char(pfr_upload_time, 'yyyy-MM-dd HH:mi'),15, 16) :: integer &lt;30 then to_char(pfr_upload_time,'HH24')||':15:00' 
+						 WHEN substr(to_char(pfr_upload_time, 'yyyy-MM-dd HH:mi'),15, 16) :: integer &lt;45 then to_char(pfr_upload_time,'HH24')||':30:00' 
+						 ELSE to_char(pfr_upload_time,'HH24')||':45:00' 
+					 END as time_interval
+				  FROM temp_t_passenger_flow_result 
+				  <where> <!-- to_char(pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd') -->
+				  	to_char(pfr_upload_time, 'yyyy-MM-dd HH24:mi:ss') >= to_char(current_date, 'yyyy-MM-dd 06:00:00')
+					AND to_char(pfr_upload_time, 'yyyy-MM-dd HH24:mi:ss') &lt;= to_char(current_date, 'yyyy-MM-dd 22:59:59')
+					<if test="lineUuids != null and lineUuids.size() >0">
+						AND pfr_line_uuid in 
+						<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+							#{lineUuid}
+						</foreach>
+					</if>
+				  </where>
+				  ORDER BY time_interval ) t1 
+				  LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+				  LEFT JOIN dw_dim_bus t3 ON t2.dev_bus_plate_number = t3.bus_plate_number
+				  <where>
+					<if test="orgId != null and orgId != ''">
+						AND t3.bus_org_uuid = #{orgId}
+					</if>
+				  </where>
+			GROUP BY t1.time_interval
+			ORDER BY t1.time_interval
+		)
+		SELECT AA.time_interval,AA.person_count,AA.bus_load_number,
+			   round((AA.person_count::numeric/AA.bus_load_number::numeric) * 100 ,2) full_load_rate  
+		FROM AA 
+	</select>
+	
+	<!-- 线路满载率排行top10 -->
+	<select id="getRealTimeFullLoadRateTop10" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT tt.pfr_line_name as line_name,
+			round((tt.prf_get_person_count::numeric/tt.bus_load_number::numeric) * 100 ,2) full_load_rate 
+			FROM (SELECT t1.pfr_line_name,SUM(t1.prf_get_person_count) AS prf_get_person_count ,SUM(COALESCE(t3.bus_load_number,56)) AS bus_load_number 
+				  FROM (SELECT pfr_upload_time,
+					             pfr_line_name,
+					             pfr_line_uuid,
+					             prf_dev_code,
+					             CASE WHEN prf_get_person_count &lt; 0 THEN 0 ELSE prf_get_person_count END AS prf_get_person_count
+						  FROM temp_t_passenger_flow_result
+						  <where> 
+						  	to_char(pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+						  	<if test="lineUuids != null and lineUuids.size() >0">
+								AND pfr_line_uuid in 
+								<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+									#{lineUuid}
+								</foreach>
+							</if>
+						  </where>
+						  ORDER BY pfr_upload_time) t1 
+				  LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+				  LEFT JOIN dw_dim_bus t3 ON t2.dev_bus_plate_number = t3.bus_plate_number 
+				  <where>
+					<if test="orgId != null and orgId != ''">
+						AND t3.bus_org_uuid = #{orgId}
+					</if>
+				  </where>
+				  GROUP BY t1.pfr_line_name
+			) tt
+		)
+		SELECT * FROM AA ORDER BY AA.full_load_rate LIMIT 10
+	</select>
+	
+	<!-- 查询某一时刻车辆满载率  车辆实时位置——车辆满载率 -->
+	<select id="getBusFullLoadRate" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="resultMap">
+		WITH AA AS(
+			SELECT t2.prf_dev_code,t2.prf_get_person_count,t2.pfr_upload_time,t3.dev_bus_plate_number,COALESCE(t4.bus_load_number,56) AS bus_load_number
+			FROM (<!-- 某一时刻车辆最后一次记录 -->
+				SELECT prf_dev_code,MAX(pfr_upload_time) as pfr_upload_time  FROM temp_t_passenger_flow_result 
+				<where>
+					to_char(pfr_upload_time, 'yyyy-MM-dd') = to_char(current_date, 'yyyy-MM-dd')
+					<if test="lineUuids != null and lineUuids.size() >0">
+						AND pfr_line_uuid in 
+						<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+							#{lineUuid}
+						</foreach>
+					</if>
+				</where>
+				GROUP BY prf_dev_code
+			)tt LEFT JOIN temp_t_passenger_flow_result t2 ON tt.prf_dev_code = t2.prf_dev_code 
+			AND tt.pfr_upload_time = t2.pfr_upload_time
+			LEFT JOIN dw_dim_other_device t3 ON tt.prf_dev_code = t3.dev_code 
+			LEFT JOIN dw_dim_bus t4 ON t3.dev_bus_plate_number = t4.bus_plate_number 
+			<where>
+				<if test="orgId != null and orgId != ''">
+					AND t4.bus_org_uuid = #{orgId}
+				</if>
+			</where>
+		)
+		SELECT AA.dev_bus_plate_number as bus_number,round((AA.prf_get_person_count::numeric/AA.bus_load_number::numeric) * 100 ,2) full_load_rate
+		FROM AA 
+	</select>
+	
+	<!-- 查询某一时刻前五分钟站点等降量（热力图数据） -->
+	<select id="getBusHeatmapDatas" parameterType="com.cictec.yyjk.report.model.vo.QueryCondition" resultMap="heatmapResultMap">
+		  WITH T1 AS(
+			SELECT t2.pfr_station_uuid,SUM(t2.pfr_get_on_number) as get_on_number 
+		    FROM temp_t_passenger_flow_result t2 
+		    	 LEFT JOIN dw_dim_bus_line t3 
+		    	 ON t2.pfr_line_uuid = t3.line_uuid
+		    <where>
+		    	t2.pfr_upload_time >= CURRENT_TIMESTAMP::timestamp + '-5 minutes' AND t2.pfr_upload_time &lt;= CURRENT_TIMESTAMP
+				<if test="orgId != null and orgId != ''">
+					AND t3.line_org_uuid = #{orgId}
+				</if>
+				<if test="lineUuids != null and lineUuids.size() >0">
+					AND t2.pfr_line_uuid in 
+					<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+						#{lineUuid}
+					</foreach>
+				</if>		    	
+		    </where>
+			GROUP BY t2.pfr_station_uuid
+		  )
+		  SELECT t2.sta_uuid,t2.sta_name,t2.sta_lng,t2.sta_lnt,T1.get_on_number 
+		  FROM t1 LEFT JOIN dw_dim_bus_station t2 ON t1.pfr_station_uuid = t2.sta_uuid
+	</select>
+	
+	<!-- 当日累计客流 -->
+	<select id="getTotalPerson" parameterType="com.cictec.yyjk.report.model.vo.WarnDetailInfoVo" resultType="java.lang.Integer">
+		SELECT SUM(pfr_get_on_number) AS total_personflow 
+		FROM temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+		<where>
+			<if test="samplingTime != null and samplingTime !=''">
+				AND to_char(pfr_upload_time,'yyyy-MM-dd HH24:mi:ss') &lt;= #{samplingTime}
+			</if>
+			<if test="busNumber != null and busNumber != ''">
+				AND t2.dev_bus_plate_number = #{busNumber}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND t1.pfr_line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 当前趟次累计客流 -->
+	<select id="getCurrentPerson" parameterType="com.cictec.yyjk.report.model.vo.WarnDetailInfoVo" resultType="java.lang.Integer">
+		SELECT SUM(pfr_get_on_number) AS total_personflow 
+		FROM temp_t_passenger_flow_result t1 
+			LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+		<where>
+			<if test="samplingTime != null and samplingTime !=''">
+				AND to_char(pfr_upload_time,'yyyy-MM-dd HH24:mi:ss') &lt;= #{samplingTime}
+			</if>
+			<if test="busNumber != null and busNumber != ''">
+				AND t2.dev_bus_plate_number = #{busNumber}
+			</if>
+			<if test="currenttrip != null and currenttrip != ''">
+				AND t1.pfr_trip_time = #{currenttrip}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND t1.pfr_line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 单车当前累计车内人数及车辆荷载人数-->
+	<select id="getPersionCountAndLoadNumber" parameterType="com.cictec.yyjk.report.model.vo.WarnDetailInfoVo" resultMap="resultMap">
+		SELECT t2.dev_bus_plate_number AS bus_number,t1.prf_get_person_count AS person_count,COALESCE(t3.bus_load_number,'56') AS bus_load_number 
+		FROM temp_t_passenger_flow_result t1 
+		LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code 
+		LEFT JOIN dw_dim_bus t3 ON t2.dev_bus_plate_number = t3.bus_plate_number
+		<where>
+			<if test="samplingTime != null and samplingTime !=''">
+				AND to_char(pfr_upload_time,'yyyy-MM-dd HH24:mi:ss') &lt;= #{samplingTime}
+			</if>
+			<if test="busNumber != null and busNumber != ''">
+				AND t2.dev_bus_plate_number = #{busNumber}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0">
+				AND t1.pfr_line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			</if>
+		</where>
+		ORDER BY pfr_upload_time DESC
+		LIMIT 1
+	</select>	
+</mapper>

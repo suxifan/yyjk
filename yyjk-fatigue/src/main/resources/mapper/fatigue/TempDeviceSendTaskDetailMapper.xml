@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TempDeviceSendTaskDetailMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TempDeviceSendTaskDetail">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="task_detail_uuid" jdbcType="VARCHAR" property="taskDetailUuid" />
+    <result column="task_uuid" jdbcType="VARCHAR" property="taskUuid" />
+    <result column="dev_uuid" jdbcType="VARCHAR" property="devUuid" />
+    <result column="task_status" jdbcType="VARCHAR" property="taskStatus" />
+    <result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+  </resultMap>
+  
+  <!-- 参数任务下发详情列表 -->
+  <select id="selectTaskDetailPage" parameterType="com.cictec.yyjk.fatigue.model.entity.TempDeviceSendTaskDetail" resultMap="BaseResultMap">
+  	select t.*,org.org_name orgName,l.line_name lineName,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,d.dev_online_status devOnlineStatus
+	from temp_device_send_task_detail t 
+	LEFT JOIN dw_dim_other_device d on t.dev_uuid = d.dev_uuid
+	LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid 
+	LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+	LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+	LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+	
+	where t.task_uuid = #{taskUuid}
+	<if test="taskStatus != null and taskStatus != '' "><![CDATA[ AND t.task_status = #{taskStatus}]]></if>
+	ORDER BY t.task_status DESC 
+  </select>
+</mapper>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseRoleResourceMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseRoleResource">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="role_resource_id" jdbcType="VARCHAR" property="roleResourceId" />
+    <result column="role_id" jdbcType="VARCHAR" property="roleId" />
+    <result column="resource_id" jdbcType="VARCHAR" property="resourceId" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+  </resultMap>
+</mapper>

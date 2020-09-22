@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.linenet.mapper.NetIndexRepeatLinenumMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatLinenum">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="uuid" jdbcType="INTEGER" property="uuid" />
+    <result column="line_number" jdbcType="VARCHAR" property="lineNumber" />
+    <result column="sc_count" jdbcType="INTEGER" property="scCount" />
+    <result column="repeat_sc_count" jdbcType="INTEGER" property="repeatScCount" />
+    <result column="repeatability" jdbcType="REAL" property="repeatability" />
+    <result column="top3" jdbcType="VARCHAR" property="top3" />
+  </resultMap>
+  
+  <!-- 获取分公司下线路重复度-->
+	<select id="getCompanyLineNumRepeat" parameterType="com.cictec.yyjk.linenet.model.vo.NetDataBasestationVo" resultType="com.cictec.yyjk.linenet.model.entity.NetIndexRepeatLinenum">
+		SELECT
+			nirl.line_number lineNumber,
+			nirl.sc_count scCount,
+			nirl.repeat_sc_count repeatScCount,
+			nirl.repeatability,
+			nirl.top3
+		FROM
+			net_index_repeat_linenum nirl
+		LEFT JOIN (SELECT DISTINCT line_uuid, company, line_number FROM net_data_busline) ndb ON ndb.line_number = nirl.line_number
+		<where>
+		 	<if test="company != null and company != ''">
+		 		AND ndb.company = #{company}
+		 	</if>
+		 	<if test="lineID != null and lineID != ''">
+		 		AND ndb.line_uuid = #{lineID}
+		 	</if>
+		 </where>
+		ORDER BY ndb.company
+	</select>
+</mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.ExcelImportLogMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.ExcelImportLog">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="xls_log_uuid" jdbcType="VARCHAR" property="xlsLogUuid" />
+    <result column="xls_log_model" jdbcType="VARCHAR" property="xlsLogModel" />
+    <result column="xls_filename" jdbcType="VARCHAR" property="xlsFilename" />
+    <result column="xls_err_code" jdbcType="VARCHAR" property="xlsErrCode" />
+    <result column="xls_err_msg" jdbcType="VARCHAR" property="xlsErrMsg" />
+    <result column="xls_log_date" jdbcType="DATE" property="xlsLogDate" />
+    <result column="xls_log_create_time" jdbcType="TIMESTAMP" property="xlsLogCreateTime" />
+    <result column="xls_log_create_user" jdbcType="VARCHAR" property="xlsLogCreateUser" />
+    <result column="xls_log_update_time" jdbcType="TIMESTAMP" property="xlsLogUpdateTime" />
+  </resultMap>
+    <!--1.1 查询参数  -->
+  <sql id="conditionByVO">  
+	  <if test="xlsLogModel!=null and xlsLogModel!=''">and	 tsel.xls_log_model like '%'||#{xlsLogModel}||'%'</if>
+	  <if test="mdStartDate!=null"><![CDATA[ AND tsel.xls_log_create_time >= #{mdStartDate} ]]></if>
+	  <if test="mdEndDate!=null"><![CDATA[AND tsel.xls_log_create_time <= #{mdEndDate}]]></if>  
+  </sql>
+  <!--1.2 根据vo 查询  -->
+  <select id="selectByVo" parameterType="com.cictec.yyjk.base.model.vo.ExcelImportLogVo" resultMap="BaseResultMap">
+	  	<![CDATA[ SELECT 
+		tsel.*
+	  FROM
+		base_excel_import_log tsel
+	  ]]>
+	  <where>  
+			<include refid="conditionByVO" />
+	  </where>
+		ORDER BY 
+			tsel.xls_log_create_time 
+		desc
+	</select>
+</mapper>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.base.mapper.BaseDataResourceInfoMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.base.model.entity.BaseDataResourceInfo">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="data_resource_id" jdbcType="VARCHAR" property="dataResourceId" />
+    <result column="data_resource_name" jdbcType="VARCHAR" property="dataResourceName" />
+    <result column="data_resource_parent_id" jdbcType="VARCHAR" property="dataResourceParentId" />
+    <result column="data_resource_type" jdbcType="VARCHAR" property="dataResourceType" />
+    <result column="data_resource_title" jdbcType="VARCHAR" property="dataResourceTitle" />
+    <result column="data_resource_sort" jdbcType="SMALLINT" property="dataResourceSort" />
+    <result column="data_resource_isvalid" jdbcType="CHAR" property="dataResourceIsvalid" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="describes" jdbcType="VARCHAR" property="describes" />
+  </resultMap>
+</mapper>

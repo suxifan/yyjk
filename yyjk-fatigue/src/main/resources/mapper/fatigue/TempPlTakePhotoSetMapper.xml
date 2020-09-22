@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TempPlTakePhotoSetMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TempPlTakePhotoSet">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="take_photo_uuid" jdbcType="VARCHAR" property="takePhotoUuid" />
+    <result column="device_id" jdbcType="VARCHAR" property="deviceId" />
+    <result column="device_code" jdbcType="VARCHAR" property="deviceCode" />
+    <result column="start_date" jdbcType="DATE" property="startDate" />
+    <result column="end_date" jdbcType="DATE" property="endDate" />
+    <result column="start_time" jdbcType="VARCHAR" property="startTime" />
+    <result column="end_time" jdbcType="VARCHAR" property="endTime" />
+    <result column="duration" jdbcType="VARCHAR" property="duration" />
+    <result column="timing_class" jdbcType="VARCHAR" property="timingClass" />
+    <result column="timing_remark" jdbcType="VARCHAR" property="timingRemark" />
+    <result column="cron" jdbcType="VARCHAR" property="cron" />
+    <result column="isvalid" jdbcType="CHAR" property="isvalid" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="create_user" jdbcType="VARCHAR" property="createUser" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+  </resultMap>
+  
+  <!-- 设备抓拍列表 查询 -->
+  <select id="selectTakePhotoSetPage" parameterType="com.cictec.yyjk.fatigue.model.vo.TempPlTakePhotoSetVo" resultType="com.cictec.yyjk.fatigue.model.entity.TempPlTakePhotoSet">
+  	SELECT org.org_name orgName,l.line_name lineName,b.bus_plate_number busPlateNumber,b.bus_self_code busSelfCode,
+  	t.take_photo_uuid takePhotoUuid ,t.device_code deviceCode,t.device_id deviceId,
+	t.start_date startDate,t.end_date endDate,t.start_time startTime,t.end_time endTime,t.duration duration,
+	t.timing_class timingClass,t.timing_remark timingRemark,t.isvalid isvalid
+	FROM temp_pl_take_photo_set t 
+	LEFT JOIN dw_dim_other_device d on t.device_id=d.dev_uuid
+ 	LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+ 	LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+ 	LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid	
+	LEFT JOIN dw_dim_bus_sys_org org on l.line_org_uuid=org.org_uuid
+		<where> 1=1
+			<if test="orgId != null and orgId != '' ">
+				AND l.line_org_uuid=#{orgId}
+			</if>
+			<if test="lineId != null and lineId != '' ">
+				AND l.line_uuid=#{lineId}
+			</if> 
+			<if test="busPlateNumber != null and busPlateNumber != '' ">
+				AND b.bus_plate_number=#{busPlateNumber}
+			</if> 
+			<if test="busUuid != null and busUuid != '' "> 
+				AND b.bus_uuid=#{busUuid}
+			</if> 
+			<if test="devCode != null and devCode != '' ">
+				AND t.device_code  like '%' ||  #{devCode} || '%'
+			</if> 
+			<if test="busSelfCode != null and busSelfCode != '' ">
+				AND b.bus_self_code like '%' ||  #{busSelfCode} || '%'
+			</if>
+			<if test="startDate != null">
+				AND t.start_date >= #{startDate}
+			</if>
+			<if test="endDate != null">
+				AND t.end_date &lt;= #{endDate}
+			</if>
+		 </where>
+	ORDER BY t.create_time DESC
+  </select>
+  
+  <!-- 获取每天可用的任务列表 -->
+  <select id="selectScheduledList" resultMap="BaseResultMap">
+  	select t.* from temp_pl_take_photo_set t
+	WHERE current_date BETWEEN t.start_date and t.end_date
+	and t.isvalid = '1'
+  </select>
+  
+</mapper>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisLengthTimeDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisLengthTimeDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="day_uuid" jdbcType="VARCHAR" property="dayUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="sta_uuid" jdbcType="VARCHAR" property="staUuid" />
+    <result column="sta_seq" jdbcType="VARCHAR" property="staSeq" />
+    <result column="sta_name" jdbcType="VARCHAR" property="staName" />
+    <result column="upload_time_day" jdbcType="VARCHAR" property="uploadTimeDay" />
+    <result column="upload_time_hour" jdbcType="INTEGER" property="uploadTimeHour" />
+    <result column="sta_length_time" jdbcType="NUMERIC" property="staLengthTime" />
+    <result column="sta_between_distance" jdbcType="NUMERIC" property="staBetweenDistance" />    
+  </resultMap>
+  
+  <!--  到站数据日统计表保留2个月数据 -->
+  <delete id="deleteLenthTimeDayDatas" parameterType="java.lang.String" >
+  		DELETE FROM analysis_length_time_day WHERE left(upload_time_day,7) &lt;= #{month}
+  </delete>
+   
+  <select id="getAnalysisLengthTimeDayDatas" parameterType="java.lang.String" resultMap="BaseResultMap">
+		SELECT
+			t1.org_uuid,
+			t1.org_name,
+			t1.line_uuid,
+			t1.line_type,
+			t1.line_name,
+			t1.sta_uuid,
+			t1.sta_seq,
+			t1.sta_name,
+			LEFT (CAST (t1.upload_time_in AS VARCHAR),10) AS upload_time_day,
+			EXTRACT (HOUR FROM t1.upload_time_in) AS upload_time_hour,
+			EXTRACT (epoch FROM (t2.upload_time_in - t1.upload_time_in)) AS sta_length_time
+		FROM
+			(
+				SELECT
+					T.org_uuid,
+					T.org_name,
+					T.line_uuid,
+					T.line_type,
+					T.line_name,
+					T.sta_uuid,
+					T.sta_seq,
+					T.sta_name,
+					T.bus_plate_number,
+					COALESCE (T.upload_time_in,T.upload_time_out) AS upload_time_in,
+					T.upload_time_date,
+					T.bus_class
+				FROM
+					analysis_arrive_volume_day T 
+					<where>
+						<if test="dateTime != null and dateTime != ''">
+							AND T.upload_time_date = #{dateTime}
+						</if>
+					</where>
+			) t1,
+			(
+				SELECT
+					T.org_uuid,
+					T.org_name,
+					T.line_uuid,
+					T.line_type,
+					T.line_name,
+					T.sta_seq,
+					T.sta_name,
+					T.sta_uuid,
+					T.bus_plate_number,
+					T.upload_time_date,
+					COALESCE (T.upload_time_in,T.upload_time_out) AS upload_time_in,
+					T.bus_class
+				FROM
+					analysis_arrive_volume_day T
+ 					<where>
+						<if test="dateTime != null and dateTime != ''">
+							AND T.upload_time_date = #{dateTime}
+						</if>
+					</where>
+			) t2
+		WHERE
+			t1.line_uuid = t2.line_uuid
+		AND t1.line_type = t2.line_type
+		AND to_number(t1.sta_seq, '99') + 1 = to_number(t2.sta_seq, '99')
+		AND t1.bus_class = t2.bus_class
+		AND t1.bus_plate_number = t2.bus_plate_number
+		AND t1.upload_time_date = t2.upload_time_date
+  </select>
+</mapper>

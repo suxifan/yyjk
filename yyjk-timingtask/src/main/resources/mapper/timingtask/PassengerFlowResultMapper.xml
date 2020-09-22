@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.PassengerFlowResultMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.PassengerFlowResult">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="id" jdbcType="VARCHAR" property="id" />
+    <result column="pfr_uuid" jdbcType="VARCHAR" property="pfrUuid" />
+    <result column="pfr_line_name" jdbcType="VARCHAR" property="pfrLineName" />
+    <result column="pfr_line_uuid" jdbcType="VARCHAR" property="pfrLineUuid" />
+    <result column="pfr_line_type" jdbcType="INTEGER" property="pfrLineType" />
+    <result column="pfr_station_seq" jdbcType="INTEGER" property="pfrStationSeq" />
+    <result column="pfr_line_station_uuid" jdbcType="VARCHAR" property="pfrLineStationUuid" />
+    <result column="pfr_get_on_number" jdbcType="INTEGER" property="pfrGetOnNumber" />
+    <result column="pfr_get_off_number" jdbcType="INTEGER" property="pfrGetOffNumber" />
+    <result column="pfr_upload_time" jdbcType="TIMESTAMP" property="pfrUploadTime" />
+    <result column="prf_dev_code" jdbcType="VARCHAR" property="prfDevCode" />
+    <result column="prf_get_f_on_number" jdbcType="INTEGER" property="prfGetFOnNumber" />
+    <result column="prf_get_f_off_number" jdbcType="INTEGER" property="prfGetFOffNumber" />
+    <result column="prf_get_c_on_number" jdbcType="INTEGER" property="prfGetCOnNumber" />
+    <result column="prf_get_c_off_number" jdbcType="INTEGER" property="prfGetCOffNumber" />
+    <result column="prf_get_e_on_number" jdbcType="INTEGER" property="prfGetEOnNumber" />
+    <result column="prf_get_e_off_number" jdbcType="INTEGER" property="prfGetEOffNumber" />
+    <result column="prf_dev_datastring" jdbcType="VARCHAR" property="prfDevDatastring" />
+    <result column="prf_get_person_count" jdbcType="INTEGER" property="prfGetPersonCount" />
+    <result column="pfr_station_uuid" jdbcType="VARCHAR" property="pfrStationUuid" />
+    <result column="pfr_station_name" jdbcType="VARCHAR" property="pfrStationName" />
+    <result column="sta_lng" jdbcType="VARCHAR" property="staLng" />
+    <result column="sta_lnt" jdbcType="VARCHAR" property="staLnt" />
+    <result column="pfr_trip_time" jdbcType="VARCHAR" property="pfrTripTime" />
+    <result column="pfr_trip_date" jdbcType="DATE" property="pfrTripDate" />
+    <result column="prf_bus_plate_number" jdbcType="VARCHAR" property="prfBusPlateNumber" />
+    <result column="bus_self_code" jdbcType="VARCHAR" property="busSelfCode" />
+    <result column="bus_load_number" jdbcType="INTEGER" property="busLoadNumber" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="sta_name" jdbcType="VARCHAR" property="staName" />  
+  </resultMap>
+  
+  <delete id="clearTabel">
+  		TRUNCATE TABLE temp_t_passenger_flow_result
+  </delete>
+  
+  <!--  删除2个月前的数据 -->
+  <delete id="deletePassengerDatas" parameterType="java.lang.String">
+          DELETE FROM mid_passenger_flow_result WHERE to_char(pfr_upload_time,'yyyy-MM') &lt;= #{month}
+  </delete>
+ 
+  <!-- 删除表 -->
+  <delete id="dropTabel">
+          DROP TABLE IF EXISTS temp_t_passenger_flow_result_temp
+  </delete>
+  
+  <update id="copyTable">
+     INSERT INTO temp_t_passenger_flow_result_temp SELECT * from temp_t_passenger_flow_result WHERE to_char(pfr_upload_time,'yyyy-MM-dd') =  to_char(CURRENT_DATE -1,'yyyy-MM-dd')
+  </update>
+  
+  <!--  统计昨天的客流数据，第二天有补录数据及单目客流数据时间异常，顾时间按月来排除异常时间  插入中间表时不要过滤站点为空的记录 t1.pfr_station_uuid IS NOT  NULL-->
+  <select id="getPassengerFlow" resultMap="BaseResultMap">
+		WITH aa AS (
+				SELECT
+					DISTINCT t1.pfr_uuid,t1.pfr_line_name,t1.pfr_line_uuid,t1.pfr_line_type,t1.pfr_station_seq,t1.pfr_line_station_uuid,t1.pfr_get_on_number,
+					t1.pfr_get_off_number,t1.pfr_upload_time,t1.prf_dev_code,t1.prf_get_f_on_number,t1.prf_get_f_off_number,t1.prf_get_c_on_number,
+					t1.prf_get_c_off_number,t1.prf_get_e_on_number,t1.prf_get_e_off_number,t1.prf_dev_datastring,t1.prf_get_person_count,t1.pfr_station_uuid,t1.pfr_trip_time,t1.pfr_trip_date,
+					t2.bus_plate_number as prf_bus_plate_number,t2.bus_self_code,t2.bus_load_number,t2.org_uuid,t2.org_name
+				FROM
+					temp_t_passenger_flow_result t1
+		      LEFT JOIN (SELECT dev.dev_code,bus.bus_uuid,bus.bus_plate_number,bus.bus_self_code,bus.bus_load_number,bus.bus_org_uuid,org.org_uuid,org.org_name 
+		                 FROM dw_dim_other_device dev 
+		                     LEFT JOIN dw_dim_other_bus_device devbus ON dev.dev_uuid = devbus.dev_uuid 
+										     LEFT JOIN dw_dim_bus bus ON devbus.bus_uuid = bus.bus_uuid 
+		                     LEFT JOIN dw_dim_bus_sys_org org ON bus.bus_org_uuid = org.org_uuid
+										 WHERE org.org_enabled = '1'
+										 AND org.org_drop_flag = '0'
+										 AND dev.dev_isvalid = '1'
+										 AND dev.dev_drop_flag = '0'
+				  ) t2 ON t1.prf_dev_code = t2.dev_code
+				WHERE to_char(pfr_upload_time,'yyyy-MM') = to_char(CURRENT_DATE-1 ,'yyyy-MM')
+			) 
+		SELECT
+			aa.*,
+			s.sta_name as pfr_station_name,
+			s.sta_lng,
+			s.sta_lnt
+		FROM
+		aa
+		LEFT JOIN dw_dim_bus_station s ON aa.pfr_station_uuid = s.sta_uuid  
+  </select>
+  
+  <!-- 客流最热站点top0 -->
+  <select id="getHortStationTopTen"  resultMap="BaseResultMap">
+        WITH tt AS(
+        SELECT
+                    t4.sta_name AS sta_name,
+                        SUM (t1.pfr_get_on_number) AS pfr_get_on_number
+                    FROM
+                        temp_t_passenger_flow_result t1 
+                        LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+                        LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+                        LEFT JOIN dw_dim_bus_station t4  ON t1.pfr_station_uuid = t4.sta_uuid 
+                         <where>
+                             <if test="orgId != null and orgId != ''">
+                                AND t3.org_uuid = #{orgId}
+                            </if>
+                            <if test="staUuids != null and staUuids.size() >0">
+                                AND t1.pfr_station_uuid in 
+                                <foreach collection="staUuids" item="staUuid" open="(" separator="," close=")">
+                                    #{staUuid}
+                                </foreach>
+                            </if>    
+                            <if test="lineUuids != null and lineUuids.size() >0">
+		                        AND t1.pfr_line_uuid in 
+		                        <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+		                            #{lineUuid}
+		                        </foreach>
+		                    </if>                         
+	                         AND to_date(to_char(t1.pfr_upload_time,'yyyy-MM-dd'),'yyyy-MM-dd') = CURRENT_DATE
+	                         AND t1.pfr_station_uuid IS NOT NULL
+	                         AND t2.line_isvalid = '1'
+	                         AND t2.line_drop_flag = '0'
+	                         AND t4.sta_name is not null
+                         </where>  
+                    GROUP BY t4.sta_name
+                )
+        SELECT * FROM tt ORDER BY tt.pfr_get_on_number DESC LIMIT 10
+  </select>
+  
+  <!-- 客流最热线路top0 -->
+  <select id="getHortLineTopTen" resultMap="BaseResultMap">
+        SELECT
+            pfr_line_name,
+                SUM (pfr_get_on_number) AS pfr_get_on_number
+            FROM
+                temp_t_passenger_flow_result t1 
+                LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+                LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+                 <where>
+                 	 AND pfr_line_name is not null
+                     AND to_date(to_char(t1.pfr_upload_time,'yyyy-MM-dd'),'yyyy-MM-dd') = CURRENT_DATE
+                     <if test="orgId != null and orgId != ''">
+                        AND t3.org_uuid = #{orgId}
+                    </if>
+                    <if test="lineUuids != null and lineUuids.size() >0">
+                        AND t1.pfr_line_uuid in 
+                        <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                            #{lineUuid}
+                        </foreach>
+                    </if>                    
+                </where>
+            GROUP BY pfr_line_name
+        ORDER BY pfr_get_on_number DESC LIMIT 10
+  </select>  
+  
+  <!-- 根据机构，线路及时间查询上下车人数 -->
+  <select id="getOnOffPersonCount" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="com.cictec.yyjk.timingtask.model.viewdata.OnOffPsersonNumberValue">
+    WITH tt AS (
+        SELECT
+            org_name orgname,line_name linename,upload_time_date uploadTime,SUM(pfr_get_on_number) as onPersonCount, SUM(pfr_get_off_number) AS  offPersonCount 
+        FROM
+            analysis_prf_fullload_day
+        <where>
+            <if test="orgId != null and orgId != ''">
+                AND org_uuid = #{orgId}
+            </if>
+            <if test="lineIds != null and lineIds.size() >0 ">
+                AND line_uuid in 
+                <foreach collection="lineIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>        
+            </if>
+            <if test="lineUuids != null and lineUuids.size() >0 ">
+                AND line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>        
+            </if>
+            <if test="startTime != null">
+                AND    upload_time_date >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND upload_time_date &lt;= #{endTime}
+            </if>
+        </where>
+        GROUP BY upload_time_date,org_name,line_name
+    )
+    SELECT * FROM tt ORDER BY tt.orgname,tt.uploadTime
+  </select>
+ 
+   <!-- 查询上下车人数，按公司求和-->
+  <select id="getOnOffPersonCountByCompany" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="com.cictec.yyjk.timingtask.model.viewdata.OnOffPsersonNumberValue">
+    WITH tt AS (
+        SELECT
+            org_name orgname,upload_time_date uploadTime,SUM(pfr_get_on_number) as onPersonCount, SUM(pfr_get_off_number) AS  offPersonCount 
+        FROM
+            analysis_prf_fullload_day
+        <where>
+            <if test="orgId != null and orgId != ''">
+                AND org_uuid = #{orgId}
+            </if>
+            <if test="lineIds != null and lineIds.size() >0 ">
+                AND line_uuid in 
+                <foreach collection="lineIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>        
+            </if>
+            <if test="lineUuids != null and lineUuids.size() >0 ">
+                AND line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>        
+            </if>
+            <if test="startTime != null">
+                AND upload_time_date >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND upload_time_date &lt;= #{endTime}
+            </if>
+        </where>
+        GROUP BY upload_time_date,org_name
+    ) 
+    SELECT * FROM tt ORDER BY tt.orgname,tt.uploadTime
+  </select>
+
+  <!-- 根据机构，线路及时间查询当天的上下车人数 -->
+  <select id="getTodayOnOffPersonCount" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="com.cictec.yyjk.timingtask.model.viewdata.OnOffPsersonNumberValue">
+		WITH aa AS (
+            SELECT
+                t1.pfr_line_name,
+                t1.pfr_get_on_number,
+                t1.pfr_get_off_number,
+                to_char(t1.pfr_upload_time,'yyyy-MM-dd') as pfr_upload_time,
+                 t3.org_name
+            FROM
+                temp_t_passenger_flow_result t1
+            LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid     
+        <where>
+            <if test="startTime != null">
+                AND t1.pfr_upload_time >= #{startTime}
+            </if>                
+            <if test="endTime != null">
+                AND t1.pfr_upload_time &lt;= #{endTime}
+            </if>
+            <if test="orgId != null and orgId != ''">
+                AND t3.org_uuid = #{orgId}
+            </if>
+            <if test="lineUuids != null and lineUuids.size() >0 ">
+                AND line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>        
+            </if>
+            AND t2.line_isvalid = '1'
+            AND t2.line_drop_flag = '0'
+        </where>              
+        ) 
+        SELECT
+        org_name orgname,pfr_line_name linename,pfr_upload_time uploadTime,SUM(pfr_get_on_number) as onPersonCount, SUM(pfr_get_off_number) AS  offPersonCount 
+        FROM aa
+        GROUP BY pfr_upload_time,org_name,pfr_line_name
+        ORDER BY org_name,pfr_line_name,pfr_upload_time
+  </select>
+ 
+   <!-- 查询当天的上下车人数，按公司求和 -->
+  <select id="getTodayOnOffPersonCountByCompany" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="com.cictec.yyjk.timingtask.model.viewdata.OnOffPsersonNumberValue">
+        WITH aa AS (
+            SELECT
+                t1.pfr_line_name,
+                t1.pfr_get_on_number,
+                t1.pfr_get_off_number,
+                to_char(t1.pfr_upload_time,'yyyy-MM-dd') as pfr_upload_time,
+                 t3.org_name
+            FROM
+                temp_t_passenger_flow_result t1
+            LEFT JOIN dw_dim_bus_line t2 ON t1.pfr_line_uuid = t2.line_uuid 
+            LEFT JOIN dw_dim_bus_sys_org t3 ON t2.line_org_uuid = t3.org_uuid 
+        <where>
+            <if test="startTime != null">
+                AND t1.pfr_upload_time >= #{startTime}
+            </if>                
+            <if test="endTime != null">
+                AND t1.pfr_upload_time &lt;= #{endTime}
+            </if>
+            <if test="orgId != null and orgId != ''">
+                AND t3.org_uuid = #{orgId}
+            </if>
+            <if test="lineIds != null and lineIds.size() >0 ">
+                AND t1.pfr_line_uuid in 
+                <foreach collection="lineIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="lineUuids != null and lineUuids.size() >0 ">
+                AND t1.pfr_line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>        
+            </if>
+            AND t2.line_isvalid = '1'
+            AND t2.line_drop_flag = '0'
+        </where>              
+        ) 
+        SELECT
+        org_name orgname,pfr_upload_time uploadTime,SUM(pfr_get_on_number) as onPersonCount, SUM(pfr_get_off_number) AS  offPersonCount 
+        FROM aa
+        GROUP BY pfr_upload_time,org_name
+        ORDER BY org_name,pfr_upload_time 
+  </select>
+
+  <!--查询当天客流数据 -->
+  <select id="getTodayPassengerFlow" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultMap="BaseResultMap">
+		SELECT
+			t1.pfr_line_name,
+			t1.pfr_line_type,
+			t1.pfr_station_seq,
+			t1.pfr_get_on_number,
+			t1.pfr_get_off_number,
+			t1.pfr_upload_time,
+			t1.prf_get_f_on_number,
+			t1.prf_get_f_off_number,
+			t1.prf_get_c_on_number,
+			t1.prf_get_c_off_number,
+			t1.prf_get_e_on_number,
+			t1.prf_get_e_off_number,
+			t1.prf_get_person_count,
+			t1.pfr_trip_time,	
+			t3.bus_plate_number as prf_bus_plate_number,
+			t3.bus_self_code,
+			t5.org_name,
+			t6.sta_name as pfr_station_name
+		FROM
+			temp_t_passenger_flow_result t1
+			LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code
+	        LEFT JOIN dw_dim_other_bus_device bd ON t2.dev_uuid = bd.dev_uuid
+	        LEFT JOIN dw_dim_bus t3 ON bd.bus_uuid = t3.bus_uuid
+	        LEFT JOIN dw_dim_bus_line t4 ON t4.line_uuid = t3.bus_line_uuid
+	        LEFT JOIN dw_dim_bus_sys_org t5 ON t5.org_uuid = t3.bus_org_uuid
+			LEFT JOIN dw_dim_bus_station t6 ON t1.pfr_station_uuid = t6.sta_uuid 
+		<where>
+			<if test="startTime != null">
+		        AND t1.pfr_upload_time >= #{startTime}
+			</if>		        
+			<if test="endTime != null">
+		        AND t1.pfr_upload_time &lt;= #{endTime}
+			</if>
+			<if test="startTrips != null and startTrips !=''">
+		        AND cast(t1.pfr_trip_time as integer) >= cast(#{startTrips} as integer)
+			</if>		        
+			<if test="endTrips != null and endTrips !='' ">
+		        AND cast(t1.pfr_trip_time as integer) &lt;= cast(#{endTrips} as integer)
+			</if>
+			<if test="lineId != null and lineId != ''">
+				AND t1.pfr_line_uuid = #{lineId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0 ">
+                AND t1.pfr_line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>        
+            </if>
+			<if test="lineType != null and lineType != ''">
+				AND t1.pfr_line_type = #{lineType}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t5.org_uuid = #{orgId}
+			</if>
+			<if test="busSelfCode != null and busSelfCode != ''">
+				AND t3.bus_self_code = #{busSelfCode}
+			</if>			
+			<if test="busNumber != null and busNumber != ''">
+				AND t3.bus_plate_number like '%' ||  #{busNumber} || '%'
+			</if>
+  		</where>
+  		ORDER BY t5.org_sort_index,t1.pfr_line_name,t3.bus_plate_number,t1.pfr_upload_time,t1.pfr_station_seq
+  </select>
+  
+  <!--查询当天总的上下车客流-->
+  <select id="getTodayTotalOnOffPassengerFlow" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="Map">
+		SELECT
+			SUM(t1.pfr_get_on_number) AS "totalOnPersonCount",
+			SUM(t1.pfr_get_off_number) AS "totalOffPersonCount"
+		FROM
+			temp_t_passenger_flow_result t1
+			LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code
+	        LEFT JOIN dw_dim_other_bus_device bd ON t2.dev_uuid = bd.dev_uuid
+	        LEFT JOIN dw_dim_bus t3 ON bd.bus_uuid = t3.bus_uuid
+	        LEFT JOIN dw_dim_bus_line t4 ON t4.line_uuid = t3.bus_line_uuid
+	        LEFT JOIN dw_dim_bus_sys_org t5 ON t5.org_uuid = t3.bus_org_uuid
+			LEFT JOIN dw_dim_bus_station t6 ON t1.pfr_station_uuid = t6.sta_uuid 
+		<where>
+			<if test="startTime != null">
+		        AND t1.pfr_upload_time >= #{startTime}
+			</if>		        
+			<if test="endTime != null">
+		        AND t1.pfr_upload_time &lt;= #{endTime}
+			</if>
+			<if test="startTrips != null and startTrips !=''">
+		        AND cast(t1.pfr_trip_time as integer) >= cast(#{startTrips} as integer)
+			</if>		        
+			<if test="endTrips != null and endTrips !=''">
+		        AND cast(t1.pfr_trip_time as integer) &lt;= cast(#{endTrips} as integer)
+			</if>
+			<if test="lineId != null and lineId != ''">
+				AND t1.pfr_line_uuid = #{lineId}
+			</if>
+			<if test="lineUuids != null and lineUuids.size() >0 ">
+                AND t1.pfr_line_uuid in 
+                <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+                    #{lineUuid}
+                </foreach>        
+            </if>
+			<if test="lineType != null and lineType != ''">
+				AND t1.pfr_line_type = #{lineType}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t5.org_uuid = #{orgId}
+			</if>
+			<if test="busSelfCode != null and busSelfCode != ''">
+				AND t3.bus_self_code = #{busSelfCode}
+			</if>			
+			<if test="busNumber != null and busNumber != ''">
+				AND t3.bus_plate_number like '%' ||  #{busNumber} || '%'
+			</if>
+  		</where>
+  </select>  
+
+  <!-- 单车客流上下车人数  当天-->
+  <select id="getTodayTotalPassengerFlowByBus" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="Map">
+ 		WITH aa AS (
+              SELECT
+                    t5.org_uuid,t5.org_name,t3.bus_uuid,t3.bus_plate_number as prf_bus_plate_number,t3.bus_self_code,t1.pfr_uuid,t1.pfr_line_name,t1.pfr_line_uuid,t1.pfr_get_on_number,
+                    t1.pfr_get_off_number,t1.pfr_upload_time,t1.prf_dev_code,t1.prf_get_person_count
+              FROM temp_t_passenger_flow_result t1
+		 		LEFT JOIN dw_dim_other_device t2 ON t1.prf_dev_code = t2.dev_code
+		        LEFT JOIN dw_dim_other_bus_device bd ON t2.dev_uuid = bd.dev_uuid
+		        LEFT JOIN dw_dim_bus t3 ON bd.bus_uuid = t3.bus_uuid
+		        LEFT JOIN dw_dim_bus_line t4 ON t4.line_uuid = t1.pfr_line_uuid
+				LEFT JOIN dw_dim_bus_sys_org t5 ON t5.org_uuid = t4.line_org_uuid
+         <where>
+             <if test="startTime != null">
+                 AND t1.pfr_upload_time >= #{startTime}
+             </if>
+             <if test="endTime != null">
+                 AND t1.pfr_upload_time &lt;= #{endTime}
+             </if>
+             <if test="lineId != null and lineId != ''">
+                  AND t1.pfr_line_uuid = #{lineId}					
+             </if>
+             <if test="orgId != null and orgId != ''">
+                  AND t5.org_uuid = #{orgId}					
+             </if>
+             <if test="busNumber != null and busNumber != ''">
+                  AND t3.bus_plate_number = #{busNumber}					
+             </if>
+             <if test="busSelfCode != null and busSelfCode != ''">
+                  AND t3.bus_self_code = #{busSelfCode}					
+             </if> 
+             <if test="lineUuids != null and lineUuids.size() >0">
+				AND t1.pfr_line_uuid in 
+				<foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+					#{lineUuid}
+				</foreach>
+			 </if>            																			
+         </where>
+        ) 
+        SELECT
+            aa.org_name as "orgName",
+            aa.pfr_line_name as "pfrLineName",
+            aa.prf_bus_plate_number as "prfBusPlateNumber",
+            aa.bus_self_code as "busSelfCode",
+            aa.prf_dev_code as "prfDevCode",
+            SUM(aa.pfr_get_on_number) as "pfrGetOnNumber",
+            SUM(aa.pfr_get_off_number) as "pfrGetOffNumber"
+        FROM aa
+        GROUP BY aa.org_name,aa.pfr_line_name,aa.prf_bus_plate_number,aa.bus_self_code,aa.prf_dev_code
+  </select>
+  
+  <!-- 单车客流上下车人数  历史-->
+  <select id="getHistoryTotalPassengerFlowByBus" parameterType="com.cictec.yyjk.timingtask.model.vo.PassengerFlowResultVo" resultType="Map">
+       SELECT 
+       		org_name AS "orgName",
+			pfr_line_name AS "pfrLineName",
+			prf_bus_plate_number AS "prfBusPlateNumber",
+			prf_dev_code AS "prfDevCode",
+			SUM(pfr_get_on_number) as "pfrGetOnNumber",
+			SUM(pfr_get_off_number) as "pfrGetOffNumber"
+		FROM mid_passenger_flow_result
+        <where>
+            <if test="startTime != null">
+                AND pfr_upload_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND pfr_upload_time &lt;= #{endTime}
+            </if>
+            <if test="lineId != null and lineId != ''">
+                 AND pfr_line_uuid = #{lineId}					
+            </if>
+            <if test="orgId != null and orgId != ''">
+                 AND org_uuid = #{orgId}					
+            </if>
+            <if test="busNumber != null and busNumber != ''">
+                 AND prf_bus_plate_number = #{busNumber}					
+            </if>																			
+        </where>		
+	    GROUP BY org_name,pfr_line_name,prf_bus_plate_number,prf_dev_code
+  </select>
+</mapper>

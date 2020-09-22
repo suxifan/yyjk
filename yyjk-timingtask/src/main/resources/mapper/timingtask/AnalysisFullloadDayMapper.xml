@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.timingtask.mapper.AnalysisFullloadDayMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.timingtask.model.entity.AnalysisFullloadDay">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="fullload_uuid" jdbcType="VARCHAR" property="fullloadUuid" />
+    <result column="org_uuid" jdbcType="VARCHAR" property="orgUuid" />
+    <result column="org_name" jdbcType="VARCHAR" property="orgName" />
+    <result column="line_uuid" jdbcType="VARCHAR" property="lineUuid" />
+    <result column="line_name" jdbcType="VARCHAR" property="lineName" />
+    <result column="line_type" jdbcType="VARCHAR" property="lineType" />
+    <result column="sta_uuid" jdbcType="VARCHAR" property="staUuid" />
+    <result column="sta_seq" jdbcType="VARCHAR" property="staSeq" />
+    <result column="sta_name" jdbcType="VARCHAR" property="staName" />
+    <result column="upload_time_date" jdbcType="DATE" property="uploadTimeDate" />
+    <result column="upload_time_hour" jdbcType="INTEGER" property="uploadTimeHour" />
+    <result column="pfr_get_on_number" jdbcType="INTEGER" property="pfrGetOnNumber" />
+    <result column="pfr_get_off_number" jdbcType="INTEGER" property="pfrGetOffNumber" />
+    <result column="prf_get_person_count" jdbcType="INTEGER" property="prfGetPersonCount" />
+    <result column="bus_load_number" jdbcType="INTEGER" property="busLoadNumber" />
+  </resultMap>
+  
+  <select id="getAnalysisFullload" parameterType="java.lang.String" resultMap="BaseResultMap">
+		SELECT
+			org_uuid,
+			org_name,
+			pfr_line_uuid AS line_uuid,
+			pfr_line_name AS line_name,
+			pfr_line_type AS line_type,
+			pfr_line_station_uuid AS sta_uuid,
+			pfr_station_seq AS sta_seq,
+			pfr_station_name AS sta_name,
+			LEFT(CAST(pfr_upload_time AS VARCHAR),10) AS upload_time_date,
+			EXTRACT (HOUR FROM pfr_upload_time) AS upload_time_hour,
+			SUM (pfr_get_on_number) AS pfr_get_on_number,
+			SUM (pfr_get_off_number) AS pfr_get_off_number,
+			SUM (prf_get_person_count) AS prf_get_person_count,
+			SUM (COALESCE(bus_load_number,56)) AS bus_load_number
+		FROM
+			mid_passenger_flow_result T 
+			<where>
+				<if test="startTime != null">
+                       AND pfr_upload_time >= #{startTime}
+                   </if>
+                <if test="endTime != null">
+                       AND pfr_upload_time &lt;= #{endTime}
+                </if>			
+			</where>
+		GROUP BY
+			org_uuid,
+			org_name,
+			pfr_line_uuid,
+			pfr_line_name,
+			pfr_line_type,
+			pfr_line_station_uuid,
+			pfr_station_seq,
+			pfr_station_name,
+			LEFT(CAST(pfr_upload_time AS VARCHAR),10),
+			EXTRACT (HOUR FROM pfr_upload_time) 
+  </select>
+  
+  <!-- 获取昨日客流等降量 -->
+  <select id="getYesterdayOnOffLineChartDatas" resultMap="BaseResultMap">
+        SELECT
+            upload_time_hour,
+            SUM (pfr_get_on_number) AS pfr_get_on_number,
+            SUM (pfr_get_off_number) AS pfr_get_off_number
+        FROM
+            analysis_prf_fullload_day
+        <where>
+	        <if test="startTime != null">
+                AND upload_time_date >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND upload_time_date &lt;= #{endTime}
+            </if>            
+            <if test="orgId != null and orgId != ''">
+                AND org_uuid = #{orgId}
+            </if>       
+            AND upload_time_hour >=6 
+            AND upload_time_hour &lt;= 22      
+        </where>
+        GROUP BY upload_time_hour
+        ORDER BY upload_time_hour
+  </select>
+  
+  <!-- 获取当日客流等降量 -->
+  <select id="getOnOffLineChartDatas" parameterType="java.lang.String" resultMap="BaseResultMap">
+		WITH tt AS (
+		        SELECT
+                pfr_station_uuid AS sta_uuid,
+                pfr_trip_date AS upload_time_date,
+                EXTRACT (HOUR FROM pfr_upload_time) AS upload_time_hour,
+                SUM (pfr_get_on_number) AS pfr_get_on_number,
+                SUM (pfr_get_off_number) AS pfr_get_off_number
+            FROM temp_t_passenger_flow_result t 
+            LEFT JOIN dw_dim_bus_line line ON t.pfr_line_uuid = line.line_uuid
+			LEFT JOIN dw_dim_bus_sys_org org ON line.line_org_uuid = org_uuid
+            <where>
+				AND	to_date(to_char(pfr_upload_time,'yyyy-MM-dd'),'yyyy-MM-dd') = CURRENT_DATE
+				<if test="orgId != null and orgId != ''">
+					AND org.org_uuid = #{orgId}
+				</if>              
+            </where> 
+            GROUP BY
+                pfr_station_uuid,
+                pfr_trip_date,
+                EXTRACT (HOUR FROM pfr_upload_time)
+        )
+        SELECT tt.upload_time_hour,SUM (tt.pfr_get_on_number) AS pfr_get_on_number,
+                SUM (tt.pfr_get_off_number) AS pfr_get_off_number  
+        FROM tt
+        WHERE tt.upload_time_hour >= 6
+        AND tt.upload_time_hour &lt;= 22
+        GROUP BY tt.upload_time_hour 
+        ORDER BY tt.upload_time_hour
+  </select>
+</mapper>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cictec.yyjk.fatigue.mapper.TDeviceMapper">
+  <resultMap id="BaseResultMap" type="com.cictec.yyjk.fatigue.model.entity.TDevice">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="dev_uuid" jdbcType="VARCHAR" property="devUuid" />
+    <result column="dev_code" jdbcType="VARCHAR" property="devCode" />
+    <result column="dev_model_num" jdbcType="VARCHAR" property="devModelNum" />
+    <result column="dev_version" jdbcType="VARCHAR" property="devVersion" />
+    <result column="dev_plate_number" jdbcType="VARCHAR" property="devPlateNumber" />
+    <result column="dev_sim_num" jdbcType="VARCHAR" property="devSimNum" />
+    <result column="dev_online_status" jdbcType="VARCHAR" property="devOnlineStatus" />
+    <result column="dev_isvalid" jdbcType="VARCHAR" property="devIsvalid" />
+    <result column="dev_phone" jdbcType="VARCHAR" property="devPhone" />
+    <result column="dev_create_user" jdbcType="VARCHAR" property="devCreateUser" />
+    <result column="dev_create_time" jdbcType="TIMESTAMP" property="devCreateTime" />
+    <result column="dev_update_user" jdbcType="VARCHAR" property="devUpdateUser" />
+    <result column="dev_update_time" jdbcType="TIMESTAMP" property="devUpdateTime" />
+    <result column="dev_drop_flag" jdbcType="VARCHAR" property="devDropFlag" />
+    <result column="dev_remark" jdbcType="VARCHAR" property="devRemark" />
+    <result column="dev_key" jdbcType="VARCHAR" property="devKey" />
+    <result column="dev_online_time" jdbcType="TIMESTAMP" property="devOnlineTime" />
+    <result column="dev_class" jdbcType="VARCHAR" property="devClass" />
+  </resultMap>
+  
+  <!-- 1.2设备在线状态统计 -->
+  <select id="countDeviceStatus" parameterType="com.cictec.yyjk.fatigue.model.vo.TDeviceVo" resultType="Map">
+		WITH aa AS(
+		 SELECT d.*
+		    FROM dw_dim_other_device d 
+		        LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+		        LEFT JOIN t_safe_device_rid_control ts ON d.dev_uuid = ts.dev_uuid AND td.bus_uuid = ts.bus_uuid
+		        LEFT JOIN dw_dim_bus b on b.bus_uuid = td.bus_uuid
+			 <where>
+			 	AND d.dev_isvalid = '1' AND d.dev_drop_flag = '0'
+	      		<if test="orgId != null and orgId != ''">
+	           	 AND b.bus_org_uuid = #{orgId}
+	        	</if>
+	        	<if test="lineId !=null and lineId !=''">
+	        	AND b.bus_line_uuid =#{lineId}	
+	        	</if>
+	        	<if test="devModel != null and devModel != ''">
+		            AND d.dev_model_num = #{devModel}
+		        </if>
+		        <if test="lineUuids != null and lineUuids.size() >0">
+		        	AND b.bus_line_uuid in 
+			        <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+			        	#{lineUuid}
+					</foreach>
+		        </if>
+				<if test="busUuid != null and busUuid != ''">
+					AND b.bus_uuid = #{busUuid}
+				</if>
+				<if test="busSelfCode != null and busSelfCode != ''">
+					AND b.bus_self_code = #{busSelfCode}
+				</if>
+				<if test="busPlateNumber != null and busPlateNumber != ''">
+					AND b.bus_plate_number = #{busPlateNumber}
+				</if>
+				<if test="busUuids != null and busUuids.size() >0">
+		        	AND b.bus_uuid in 
+			        <foreach collection="busUuids" item="busUuid" open="(" separator="," close=")">
+			        	#{busUuid}
+					</foreach>
+		        </if>             
+				<if test="devCode != null and devCode != ''">
+					AND d.dev_code = #{devCode}
+				</if>
+				<if test="devOnlineStatus != null and devOnlineStatus != ''">
+		            AND d.dev_online_status= #{devOnlineStatus}
+		        </if>
+		        <if test="busState != null and busState != ''">
+		            AND ts.bus_state= #{busState}
+		        </if>
+	       	 </where>
+		)
+		SELECT 
+			count(aa.*) "deviceCount", COALESCE(sum (CASE WHEN aa.dev_online_status = '1'  THEN 1 ELSE 0 END),0) AS "onlineDeviceCount",
+			(
+				SELECT
+					COUNT(ts.uuid)
+				FROM
+					t_safe_device_rid_control ts
+				LEFT JOIN dw_dim_other_device d ON d.dev_uuid = ts.dev_uuid
+				<where>
+				 	d.dev_isvalid = '1' AND d.dev_drop_flag = '0' AND ts.bus_state = '1' AND ts.current_state = '0'
+		      		<if test="orgId != null and orgId != ''">
+		           	 AND ts.org_uuid = #{orgId}
+		        	</if>
+		        	<if test="lineId !=null and lineId !=''">
+		        	AND ts.line_uuid =#{lineId}	
+		        	</if>
+		        	<if test="devModel != null and devModel != ''">
+			            AND ts.dev_model = #{devModel}
+			        </if>
+			        <if test="lineUuids != null and lineUuids.size() >0">
+			        	AND ts.line_uuid in 
+				        <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+				        	#{lineUuid}
+						</foreach>
+			        </if>
+					<if test="busUuid != null and busUuid != ''">
+						AND ts.bus_uuid = #{busUuid}
+					</if>
+					<if test="busSelfCode != null and busSelfCode != ''">
+						AND ts.bus_self_code = #{busSelfCode}
+					</if>
+					<if test="busPlateNumber != null and busPlateNumber != ''">
+						AND ts.bus_number = #{busPlateNumber}
+					</if>
+					<if test="busUuids != null and busUuids.size() >0">
+			        	AND ts.bus_uuid in 
+				        <foreach collection="busUuids" item="busUuid" open="(" separator="," close=")">
+				        	#{busUuid}
+						</foreach>
+			        </if>             
+					<if test="devCode != null and devCode != ''">
+						AND ts.dev_code = #{devCode}
+					</if>
+					<if test="devOnlineStatus != null and devOnlineStatus != ''">
+			            AND ts.dev_state= #{devOnlineStatus}
+			        </if>
+					<if test="busState != null and busState != ''">
+			            AND ts.bus_state= #{busState}
+			        </if>
+		       	 </where>
+			) AS "ridControlDeviceCount" 
+		FROM aa
+  </select>
+  
+  <select id="queryDeviveInfo" parameterType="com.cictec.yyjk.fatigue.model.vo.TDeviceVo" resultType="com.cictec.yyjk.fatigue.model.entity.TDevice">
+    SELECT d.dev_code "devCode",org.org_name "orgName",l.line_name "lineName",b.bus_plate_number "busPlateNumber",b.bus_self_code "busSelfCode",d.dev_sim_num "devSimNum",
+       CASE WHEN d.dev_online_status = '1' THEN '在线' ELSE '离线' END as "devOnlineStatus",
+       CASE WHEN d.dev_isvalid = '1' THEN '启用' ELSE '禁用' END as "devIsvalid",d.dev_online_time "devOnlineTime",COALESCE(ts.bus_state, '0') busState,d.dev_model_num devModel,
+       (CASE WHEN d.dev_online_status != '1' THEN round(cast((EXTRACT(epoch FROM (SELECT (NOW() - d.dev_online_time)))/60)as numeric)) ELSE NULL END) offlineTimeLabel 
+    FROM dw_dim_other_device d 
+        LEFT JOIN dw_dim_other_bus_device td on td.dev_uuid=d.dev_uuid
+        LEFT JOIN t_safe_device_rid_control ts ON d.dev_uuid = ts.dev_uuid AND td.bus_uuid = ts.bus_uuid
+        LEFT JOIN dw_dim_bus b on b.bus_uuid=td.bus_uuid
+        LEFT JOIN dw_dim_bus_line l on b.bus_line_uuid=l.line_uuid    
+        LEFT JOIN dw_dim_bus_sys_org org on b.bus_org_uuid = org.org_uuid 
+    <where>
+        AND d.dev_isvalid = '1' 
+        AND d.dev_drop_flag = '0'
+        <!-- AND d.dev_class != '10' -->
+        <if test="orgId != null and orgId != ''">
+            AND org.org_uuid = #{orgId}
+        </if>
+        <if test="lineId != null and lineId != ''">
+            AND l.line_uuid= #{lineId}
+        </if>
+        <if test="lineUuids != null and lineUuids.size() >0">
+        	AND l.line_uuid in 
+	        <foreach collection="lineUuids" item="lineUuid" open="(" separator="," close=")">
+	        	#{lineUuid}
+			</foreach>
+        </if>
+        <if test="devOnlineStatus != null and devOnlineStatus != ''">
+            AND d.dev_online_status= #{devOnlineStatus}
+        </if>
+        <if test="devCode != null and devCode != ''">
+            AND d.dev_code LIKE '%'|| #{devCode} || '%'
+        </if> 
+        <if test="busPlateNumber != null and busPlateNumber != ''">
+            AND b.bus_plate_number LIKE '%'|| #{busPlateNumber} || '%'
+        </if>
+        <if test="busSelfCode != null and busSelfCode != ''">
+            AND b.bus_self_code LIKE '%'|| #{busSelfCode} || '%'
+        </if>
+        <if test="busState != null and busState != ''">
+            AND ts.bus_state = #{busState}
+        </if>
+        <if test="devModel != null and devModel != ''">
+            AND d.dev_model_num = #{devModel}
+        </if>
+    </where>
+    ORDER BY d.dev_online_time DESC
+  </select>
+  
+  
+</mapper>
